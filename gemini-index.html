@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlideCraft 簡報排版設計實驗室 — Studio Pro v3.0</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans TC (黑體), Noto Serif TC (明體對比示範), JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                        serif: ['"Noto Serif TC"', 'PMingLiU', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        studio: {
+                            bg: '#090d16',
+                            panel: '#111827',
+                            surface: '#1e293b',
+                            border: '#334155',
+                            accent: '#6366f1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Figma / Canva Dark Workspace Dot Grid */
+        .bg-dot-grid {
+            background-color: #090d16;
+            background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+
+        /* Checkerboard pattern for fake transparency NG demo */
+        .bg-checkerboard {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
+                linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #cbd5e1 75%), 
+                linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Smooth Transitions on Slide Canvas */
+        .slide-canvas, .slide-element {
+            transition: all 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Simulated Low-Res Blur for NG Image Demo */
+        .pixelated-ng {
+            filter: contrast(1.15) brightness(0.95) blur(0.6px);
+        }
+
+        /* Tabular numbers for tables */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-studio-bg text-slate-100 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- ==================== TOP STUDIO HEADER BAR ==================== -->
+    <header class="h-16 bg-studio-panel border-b border-studio-border px-5 flex items-center justify-between shrink-0 z-30">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="ph-bold ph-presentation-chart text-white text-xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base tracking-tight text-white">SlideCraft</span>
+                    <span class="text-[11px] font-mono uppercase px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full">Studio Pro v3.0</span>
+                </div>
+                <p class="text-xs text-slate-400">簡報排版設計互動實驗室 • 12 大實戰改造案例</p>
+            </div>
+        </div>
+
+        <!-- 5 Module Navigation Tabs -->
+        <nav class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800" id="module-tabs">
+            <button onclick="switchModule('color')" id="tab-color" class="module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all">
+                <i class="ph-fill ph-palette text-lg"></i>
+                <span>1. 色彩配置</span>
+                <span id="badge-color" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0/9</span>
+            </button>
+            <button onclick="switchModule('typo')" id="tab-typo" class="module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all">
+                <i class="ph-fill ph-text-aa text-lg"></i>
+                <span>2. 文字排版</span>
+                <span id="badge-typo" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0/9</span>
+            </button>
+            <button onclick="switchModule('image')" id="tab-image" class="module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all">
+                <i class="ph-fill ph-image text-lg"></i>
+                <span>3. 圖片視覺</span>
+                <span id="badge-image" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0/9</span>
+            </button>
+            <button onclick="switchModule('layout')" id="tab-layout" class="module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all">
+                <i class="ph-fill ph-layout text-lg"></i>
+                <span>4. 版面留白</span>
+                <span id="badge-layout" class="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">0/9</span>
+            </button>
+            <div class="w-px h-5 bg-slate-700 mx-1"></div>
+            <button onclick="switchModule('quiz')" id="tab-quiz" class="module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all">
+                <i class="ph-fill ph-trophy text-lg text-amber-400"></i>
+                <span>5. 終極實戰挑戰 (8題)</span>
+            </button>
+        </nav>
+
+        <!-- Right Progress & Quick Actions -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                <div class="text-xs text-slate-400">全站修復進度</div>
+                <div class="w-20 h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="global-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="global-progress-text" class="text-xs font-mono font-bold text-emerald-400">0/36</span>
+            </div>
+
+            <div id="quick-action-group" class="flex items-center gap-1.5">
+                <button onclick="setAllCurrentCase(false)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition flex items-center gap-1" title="將本案例還原為常見學生錯誤排版">
+                    <i class="ph-bold ph-warning"></i> 全踩雷 (NG)
+                </button>
+                <button onclick="setAllCurrentCase(true)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1" title="一鍵套用本案例專業設計師排版">
+                    <i class="ph-bold ph-magic-wand"></i> 一鍵美化 (OK)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN WORKSPACE AREA ==================== -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- LEFT INSPECTOR SIDEBAR (Hidden in Quiz Mode) -->
+        <aside id="left-inspector" class="w-[410px] bg-studio-panel border-r border-studio-border flex flex-col shrink-0 z-20">
+            <!-- Module Header & Case Switcher -->
+            <div class="p-4 border-b border-studio-border bg-slate-900/50 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span id="inspector-tag" class="text-[11px] font-mono uppercase tracking-wider text-indigo-400 font-semibold">MODULE 01 • COLOR HARMONY</span>
+                    <span id="inspector-status-pill" class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30">尚有 3 個排版地雷</span>
+                </div>
+
+                <!-- 3-Case Selector Pill Bar -->
+                <div class="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800" id="case-selector-bar">
+                    <!-- Populated via JS -->
+                </div>
+
+                <div>
+                    <h2 id="inspector-title" class="text-base font-bold text-white">色彩配置與視覺層次</h2>
+                    <p id="inspector-desc" class="text-xs text-slate-400 mt-1 leading-relaxed">
+                        請點擊下方控制開關（或按數字鍵 1 / 2 / 3），逐步修正投影片中的設計地雷。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Interactive Toggles List -->
+            <div id="inspector-controls" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Dynamic Live Meter / Rule Box in Left Sidebar Bottom -->
+            <div id="inspector-meter" class="p-3.5 border-t border-studio-border bg-slate-900/80">
+                <!-- Populated by JS -->
+            </div>
+        </aside>
+
+        <!-- CENTER INTERACTIVE CANVAS WORKSPACE -->
+        <section id="canvas-workspace" class="flex-1 bg-dot-grid flex flex-col justify-between overflow-hidden relative">
+            
+            <!-- Canvas Top Floating Bar -->
+            <div id="canvas-toolbar" class="h-12 px-6 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-sm z-10">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                        <i class="ph ph-monitor text-indigo-400"></i> 16:9 畫布預覽
+                    </span>
+                    <span class="text-slate-700">|</span>
+                    <span id="slide-scenario-label" class="text-xs text-indigo-300 font-semibold">案例 1-1：校園永續減塑行動提案</span>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <span class="hidden xl:inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-900/90 px-2.5 py-1 rounded border border-slate-800 font-mono">
+                        快捷鍵: <kbd class="px-1 bg-slate-800 text-slate-200 rounded">1</kbd><kbd class="px-1 bg-slate-800 text-slate-200 rounded">2</kbd><kbd class="px-1 bg-slate-800 text-slate-200 rounded">3</kbd> 修復開關 • <kbd class="px-1.5 bg-slate-800 text-slate-200 rounded">Space</kbd> 按住對比
+                    </span>
+
+                    <!-- Safe Margin & Alignment Grid Toggle -->
+                    <button onclick="toggleGridOverlay()" id="btn-grid-overlay" class="px-3 py-1 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                        <i class="ph ph-grid-four"></i>
+                        <span>顯示安全邊距與格線 (G)</span>
+                    </button>
+
+                    <!-- Hold to Compare NG vs Current/OK -->
+                    <button onmousedown="startCompareHold()" onmouseup="endCompareHold()" onmouseleave="endCompareHold()" class="px-3 py-1 rounded-md text-xs font-medium bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition flex items-center gap-1.5 active:scale-95">
+                        <i class="ph-bold ph-eye"></i>
+                        <span>按住對比原始災難版 (Space)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 16:9 Slide Container Wrapper -->
+            <div id="slide-stage-wrapper" class="flex-1 flex items-center justify-center p-6 lg:p-10 overflow-hidden">
+                <div class="w-full max-w-[920px] aspect-video relative rounded-xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-slate-700/80 overflow-hidden bg-white" id="slide-frame">
+                    
+                    <!-- Simulated Slide Content Rendered Here -->
+                    <div id="slide-viewport" class="w-full h-full relative overflow-hidden slide-canvas select-text">
+                        <!-- Dynamically rendered per module -->
+                    </div>
+
+                    <!-- Designer Grid & Safe Margin Overlay -->
+                    <div id="grid-overlay" class="inset-0 pointer-events-none hidden z-30">
+                        <div class="absolute inset-[7%] border-2 border-dashed border-cyan-400/80 bg-cyan-500/5 flex flex-col justify-between p-2">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-cyan-500 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">SAFE MARGIN 8% 安全留白邊界</span>
+                                <span class="bg-cyan-500 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">視覺對齊基準線</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-5 h-full my-2">
+                                <div class="border-x border-cyan-400/30 bg-cyan-400/5"></div>
+                                <div class="border-x border-cyan-400/30 bg-cyan-400/5"></div>
+                                <div class="border-x border-cyan-400/30 bg-cyan-400/5"></div>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-cyan-500/90 text-slate-950 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">避免將文字貼齊投影片最外框</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hold Compare Indicator Badge -->
+                    <div id="compare-badge" class="hidden absolute top-3 right-3 z-40 bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 animate-pulse">
+                        <i class="ph-fill ph-warning-octagon"></i> 原始踩雷災難版 (Before)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Key Design Principle Takeaway Bar -->
+            <footer id="bottom-takeaway" class="bg-studio-panel border-t border-studio-border px-6 py-3.5 z-10">
+                <!-- Populated dynamically with key cheatsheet rules -->
+            </footer>
+        </section>
+
+        <!-- ==================== QUIZ MODE FULL CONTAINER (Hidden unless tab === 'quiz') ==================== -->
+        <section id="quiz-workspace" class="hidden flex-1 bg-dot-grid overflow-y-auto p-6 lg:p-10">
+            <div class="max-w-5xl mx-auto">
+                <div id="quiz-container"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== APPLICATION LOGIC ==================== -->
+    <script>
+        // =========================================================================
+        // 1. STATE MANAGEMENT & 12-CASE CURRICULUM CONFIGURATION
+        // =========================================================================
+        const state = {
+            currentModule: 'color', // 'color' | 'typo' | 'image' | 'layout' | 'quiz'
+            currentCaseIndex: {
+                color: 0,
+                typo: 0,
+                image: 0,
+                layout: 0
+            },
+            showGrid: false,
+            isComparingNG: false,
+            // 4 Modules x 3 Cases x 3 Toggles = 36 Interactive Checkpoints
+            toggles: {
+                color: [
+                    { c1: false, c2: false, c3: false }, // Case 1-1
+                    { c1: false, c2: false, c3: false }, // Case 1-2
+                    { c1: false, c2: false, c3: false }  // Case 1-3
+                ],
+                typo: [
+                    { c1: false, c2: false, c3: false }, // Case 2-1
+                    { c1: false, c2: false, c3: false }, // Case 2-2
+                    { c1: false, c2: false, c3: false }  // Case 2-3
+                ],
+                image: [
+                    { c1: false, c2: false, c3: false }, // Case 3-1
+                    { c1: false, c2: false, c3: false }, // Case 3-2
+                    { c1: false, c2: false, c3: false }  // Case 3-3
+                ],
+                layout: [
+                    { c1: false, c2: false, c3: false }, // Case 4-1
+                    { c1: false, c2: false, c3: false }, // Case 4-2
+                    { c1: false, c2: false, c3: false }  // Case 4-3
+                ]
+            },
+            quiz: {
+                currentIndex: 0,
+                score: 0,
+                answered: false,
+                selectedOption: null
+            }
+        };
+
+        const moduleSpecs = {
+            color: {
+                tag: 'MODULE 01 • COLOR HARMONY',
+                cases: [
+                    {
+                        shortTab: '案例 1-1：60-30-10 法則',
+                        title: '色彩配置：60-30-10 黃金配色法則',
+                        scenario: '案例 1-1：校園永續減塑行動提案（配色比例與強調色控制）',
+                        desc: '許多學生喜歡用高飽和螢光色當背景，或把每個重點塗上不同顏色。請開啟下方開關，體驗 60-30-10 配色的視覺舒適度。',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 60% 背景底色淨化',
+                                ngLabel: '刺眼螢光黃綠漸層底色，看久眼睛極度疲勞且干擾閱讀',
+                                okLabel: '沉穩微暖白 (#F8FAFC) 底色，乾淨且凸顯內容舞台',
+                                why: '背景佔據最大面積（60%），應選擇低彩度的白、淺灰或深邃暗色，把視覺舞台留給內容。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 30% 主色調與文字高對比',
+                                ngLabel: '紅配綠撞色、淺黃字配亮底，後排觀眾完全看不見',
+                                okLabel: '深炭灰內文 (#0F172A) 搭配深石板色結構卡片，明度對比清晰俐落',
+                                why: '明度對比決定可讀性！淺色背景必配深色字，並以單一主色調（30%）建立結構感。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 10% 單一強調色聚焦',
+                                ngLabel: '紅、紫、亮藍、桃紅同時出現，整頁像霓虹燈沒有焦點',
+                                okLabel: '全頁僅用單一翡翠綠 (#10B981) 與琥珀色聚焦核心數據「+68%」',
+                                why: '當所有東西都是重點，就沒有重點！強調色控制在 10% 以內，才能一秒抓住觀眾眼球。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-paint-bucket', title: '60% 主底色', desc: '微暖白 / 淺灰 / 深灰藍，負責營造呼吸感與乾淨舞台' },
+                            { icon: 'ph-shapes', title: '30% 輔助主色', desc: '品牌色或主題色（如深石板色/森林綠），用於副標與資訊卡片' },
+                            { icon: 'ph-sparkle', title: '10% 點綴強調色', desc: '高對比強調色，全頁只用在最關鍵的 1 個核心 KPI 數字' }
+                        ],
+                        meterTitle: '即時色彩比例診斷 (60-30-10 法則)'
+                    },
+                    {
+                        shortTab: '案例 1-2：圖表色彩降噪',
+                        title: '數據圖表：色彩降噪與結論式標題',
+                        scenario: '案例 1-2：高中生社團參與動機調查長條圖（避免彩虹圖表災難）',
+                        desc: 'Excel 或簡報軟體預設常給每條長條圖不同鮮豔色彩，導致畫面像馬戲團且看不出重點。試著替圖表進行「色彩降噪」！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 消除彩虹長條圖 (灰階弱化次要項)',
+                                ngLabel: '5 條長條塗滿大紅、亮綠、亮紫、亮黃，不知道該看哪一條',
+                                okLabel: '次要動機統一改為低彩度冷灰 (#CBD5E1)，僅將第一名標為靛藍色 (#4F46E5)',
+                                why: '商務數據簡報黃金技巧：把一般數據變成灰色，只把「你要講的那一條」塗上品牌強調色！'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 移除雜訊格線與花俏底圖',
+                                ngLabel: '深藍漸層底配粗黑格線，還要在旁邊放小圖例來回比對顏色',
+                                okLabel: '無邊框乾淨圖表區，並直接將百分比數值標註在長條頂端',
+                                why: '減少觀眾的眼球移動成本！去除粗黑網格線並直接標註數值，讓台下一秒看懂數據高低。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 結論式標題取代描述式標題',
+                                ngLabel: '標題只寫「社團參與動機統計圖」，觀眾還得自己算哪個最高',
+                                okLabel: '標題直接破題：「高達 64% 學生因『累積學習歷程』加入學術社團」',
+                                why: '好簡報的標題應該直接寫出「數據背後的洞察結論」，而不只是圖表名稱。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-chart-bar', title: '拒絕預設彩虹圖', desc: '刪除多餘圖例與立體陰影，五顏六色只會分散注意力' },
+                            { icon: 'ph-eyedropper-sample', title: '灰階 + 單一高亮色', desc: '80% 參考數據使用中性淺灰，20% 主角數據使用高彩度主色' },
+                            { icon: 'ph-chat-centered-text', title: '標題直接寫出結論', desc: '別只寫「動機統計圖」，應直接寫出最重要的發現與百分比' }
+                        ],
+                        meterTitle: '數據視覺訊號雜訊比 (Signal-to-Noise Ratio)'
+                    },
+                    {
+                        shortTab: '案例 1-3：深色科技模式',
+                        title: '深色模式：拒絕純黑與降飽和粉彩層次',
+                        scenario: '案例 1-3：AI 世代自主學習論壇（高質感 Dark Mode 技巧）',
+                        desc: '做科技主題簡報時，很多學生直接用純黑 (#000000) 配螢光綠字，看起來像駭客任務中毒畫面。來學習 Apple 發表會等級的深色排版！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 拒絕純黑與刺眼螢光',
+                                ngLabel: '死氣沉沉的純黑 (#000000) 配螢光綠字 (#00FF00)，造成散光族眩光不適',
+                                okLabel: '採用午夜深灰藍 (#0F172A) 搭配柔白文字 (#F1F5F9)，深邃溫潤不刺眼',
+                                why: '專業深色介面很少用 #000 純黑！改用帶有微藍的深岩石灰，視覺更自然柔和。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 降飽和粉彩強調色',
+                                ngLabel: '高飽和純藍 (#0000FF) 與正紅 (#FF0000) 在暗底上產生視覺震動殘影',
+                                okLabel: '改用高明度天際藍 (#38BDF8) 與柔紫 (#A855F7) 標籤，清晰優雅',
+                                why: '在深色背景上，高飽和原色會刺眼難讀；調降飽和度並提高明度（混入白色調）才是正解。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 半透明毛玻璃卡片層次',
+                                ngLabel: '卡片用突兀粗白框切割，缺乏空間前後層次感',
+                                okLabel: '以半透明深色毛玻璃 (bg-slate-800/70) 搭配 1px 微亮邊框營造立體感',
+                                why: '深色模式無法靠黑色陰影表現立體感，需透過「表面微亮疊加」與細緻邊框來區分前後層次。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-moon-stars', title: '深灰藍取代純黑', desc: '使用 #0F172A 或 #111827，搭配 #F1F5F9 柔白文字最護眼' },
+                            { icon: 'ph-sliders', title: '降低色彩飽和度', desc: '暗底上的彩色字應加入 20%~30% 白色調（高明度粉彩）' },
+                            { icon: 'ph-stack', title: '毛玻璃與微光邊框', desc: '善用半透明深灰藍卡片與 border-slate-700 創造精緻科技感' }
+                        ],
+                        meterTitle: '深色模式舒適度與層次檢測'
+                    }
+                ]
+            },
+            typo: {
+                tag: 'MODULE 02 • TYPOGRAPHY & DATA',
+                cases: [
+                    {
+                        shortTab: '案例 2-1：告別作文牆',
+                        title: '文字排版：字體選擇、三欄卡片與呼吸行距',
+                        scenario: '案例 2-1：Z 世代短影音行銷趨勢報告（將長文轉化為視覺卡片）',
+                        desc: '簡報不是 Word 報告！請開啟下方開關，將密密麻麻的新細明體文字牆，轉化為一秒讀懂的視覺化重點簡報。',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 簡報字體選擇 (黑體 vs. 新細明體)',
+                                ngLabel: '使用新細明體（襯線體），橫筆極細、末端有襯線，遠看模糊斷裂',
+                                okLabel: '改用現代黑體 (Noto Sans TC)，筆畫粗細均勻、遠距離投影超清晰',
+                                why: '投影幕受環境光影響，細碎的襯線體（新細明體）極易模糊；簡報首選無襯線「黑體」。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 提煉關鍵字與三欄卡片',
+                                ngLabel: '整頁塞滿 260 字完整演講稿段落，觀眾只顧低頭讀字不聽你講',
+                                okLabel: '提煉「3 大關鍵洞察卡片 + 圖示」，每點精簡至 15 字以內',
+                                why: '投影片是講者的「視覺輔助」，不是提詞機！刪去冗長連接詞，只留關鍵字與核心數字。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 字級階層與 1.6 倍呼吸行距',
+                                ngLabel: '標題與內文一樣小，行距擠成一團 (1.1倍)，毫無重點階層',
+                                okLabel: '主標 32pt 粗體 > 副標 18pt > 內文 14pt，行距拉開至 1.6 倍',
+                                why: '透過明確的「字級大小差」與「粗細對比」，觀眾不用思考就能看出資訊的先後順序。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-text-t', title: '首選無襯線黑體', desc: '思源黑體、微軟正黑體，遠距離投影依然清晰俐落' },
+                            { icon: 'ph-scissors', title: '刪減 70% 贅字', desc: '一段話只留一個核心動詞與數據，把詳細解釋留給口頭發表' },
+                            { icon: 'ph-arrows-out-line-vertical', title: '黃金字級與行距', desc: '大標 ≥ 32pt、內文 ≥ 16pt，行距設定 1.5 ~ 1.6 倍最舒適' }
+                        ],
+                        meterTitle: '字級階層與全頁字數監測'
+                    },
+                    {
+                        shortTab: '案例 2-2：巨型數字張力',
+                        title: '數據視覺化：巨型數字錨點與圖示列表',
+                        scenario: '案例 2-2：校園手搖飲消費習慣調查（放大核心數據張力）',
+                        desc: '當報告中有驚人的統計數據時，千萬別把它埋在普通句子裡！試著把關鍵數字放大 5 倍，創造強烈的視覺震撼。',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 提煉巨型視覺錨點 (Hero Number)',
+                                ngLabel: '重要數據「78%」跟一般國字一樣小，埋在長句裡毫無震撼力',
+                                okLabel: '在左側將「78%」獨立放大至 72px 超粗體，瞬間成為全場視覺核心',
+                                why: '大腦對超大數字有天然的記憶力！將關鍵指標放大並搭配醒目色彩，說服力立刻翻倍。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 數值與單位階層分離',
+                                ngLabel: '「新台幣850億元整」全部用同一種字級連在一起，呆板難讀',
+                                okLabel: '粗體彩色大數字 + 小號單位徽章 + 清晰說明標籤，層次分明',
+                                why: '把「數字」、「單位」與「說明文字」拆開設定不同字級大小，能創造如同財經雜誌般的精緻感。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 條列重點搭配視覺圖示',
+                                ngLabel: '用分號把三段消費趨勢擠在同一塊純文字裡，缺乏掃讀節奏',
+                                okLabel: '拆分為垂直結構卡片，並搭配具象化 SVG 圖示（減糖、環保杯、配料）',
+                                why: '視覺圖示（Icon）能幫助大腦在閱讀文字前先理解主題類別，大幅提升掃讀速度。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-number-circle-eight', title: '數據放大 5 倍原則', desc: '一頁若有核心百分比或金額，請大膽放大至 60pt~80pt' },
+                            { icon: 'ph-text-columns', title: '數字與單位拆解', desc: '採用幾何數字字體，讓大數字與小單位形成強烈大小對比' },
+                            { icon: 'ph-shapes', title: 'Icon 取代純文字條列', desc: '每個重點搭配一個風格統一的圖示，告別無聊公文條列' }
+                        ],
+                        meterTitle: '數據視覺衝擊力診斷'
+                    },
+                    {
+                        shortTab: '案例 2-3：專業表格改造',
+                        title: '表格排版：減法格線、文左數右與整欄高亮',
+                        scenario: '案例 2-3：專題協作軟體方案評比表（告別傳統 Excel 粗黑框）',
+                        desc: '把 Excel 表格直接複製貼上到簡報是常見災難！跟著下面三個步驟，把死板的格線表改造成高質感商務比較表。',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 減法格線（去除垂直線）',
+                                ngLabel: '四面八方都是粗黑實線，像鐵籠一樣把文字死死關住',
+                                okLabel: '刪除所有垂直線，僅保留輕盈的水平淺灰分隔線與乾淨表頭底色',
+                                why: '人眼會順著欄位自然垂直對齊，根本不需要粗黑垂直線！去掉垂直線能讓表格瞬間清爽。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 文左數右對齊法則',
+                                ngLabel: '長短不一的文字與價格全部置中對齊，每行起點參差不齊極難掃視',
+                                okLabel: '功能名稱統一靠左對齊、價格數據等寬靠右對齊 (tabular-nums)',
+                                why: '文字靠左才能順暢閱讀；數字靠右才能對齊個位、十位與百位數，方便快速比大小！'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 推薦方案整欄視覺高亮',
+                                ngLabel: '三欄長得一模一樣，且沒有視覺焦點，評審不知道你們選哪一個',
+                                okLabel: '將「校園進階版」整欄加上柔和靛藍底色與「★ 最推薦」徽章',
+                                why: '放表格是為了幫觀眾做決定！直接將最佳方案整欄高亮凸顯，一秒引導決策。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-table', title: '刪除垂直分隔線', desc: '現代UI表格只留水平細線，切忌使用粗黑田字格' },
+                            { icon: 'ph-align-left', title: '文左、數右、狀態中', desc: '項目文字靠左對齊，金額數據靠右對齊，勾選狀態置中對齊' },
+                            { icon: 'ph-star', title: '高亮推薦欄位', desc: '把你要主推的那一欄加上淺色底塊與推薦標籤，一秒引導決策' }
+                        ],
+                        meterTitle: '表格掃讀效率與清晰度檢測'
+                    }
+                ]
+            },
+            image: {
+                tag: 'MODULE 03 • VISUAL & IMAGERY',
+                cases: [
+                    {
+                        shortTab: '案例 3-1：滿版與漸層遮罩',
+                        title: '圖片視覺：等比例縮放、滿版出血與深色漸層遮罩',
+                        scenario: '案例 3-1：阿里山精品咖啡品牌故事（圖文融合技巧）',
+                        desc: '一張好圖勝過千言萬語，但變形或帶白框的圖片會瞬間摧毀專業感！試著修復這張產品形象投影片。',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 嚴禁拉扯變形（等比例縮放）',
+                                ngLabel: '為了塞滿版面直接硬拉長寬，導致咖啡視覺與杯子被嚴重壓扁失真',
+                                okLabel: '鎖定等比例縮放 (object-cover)，保持完美圓潤的視覺比例',
+                                why: '任何圖片一旦長寬比失真，觀眾第一眼就會察覺廉價違和感。版面不合請用「裁切」而非「拉扯」。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 移除突兀白框與浮水印（滿版出血）',
+                                ngLabel: '帶有突兀白色外框、假去背棋盤格背景與 SAMPLE 圖庫浮水印',
+                                okLabel: '採用高畫質無浮水印圖片，並將主視覺延伸至滿版出血 (Full-bleed)',
+                                why: '去除多餘白邊、讓高畫質照片直接延伸至投影片四邊（出血），能創造電影級的沉浸張力。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 加上深色漸層遮罩 (Scrim Overlay)',
+                                ngLabel: '白色文字直接壓在明亮交錯的照片上，字跡跟背景糊在一起',
+                                okLabel: '疊加由左至右的深色漸層遮罩 (from-slate-950/90)，讓白色文字銳利浮現',
+                                why: '想做出雜誌封面的滿版圖文感？只要在圖片與文字間加一層半透明黑底漸層即可解決！'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-lock-key', title: '等比例縮放鐵律', desc: '縮放時務必鎖定比例，多餘範圍使用「裁切 (Crop)」處理' },
+                            { icon: 'ph-ArrowsOutSimple', title: '滿版出血張力', desc: '高畫質情境大圖貼齊投影片邊緣，能大幅提升視覺氣勢' },
+                            { icon: 'ph-gradient', title: '漸層遮罩救星', desc: '照片太花看不清文字時，疊加半透明深色漸層或毛玻璃色塊' }
+                        ],
+                        meterTitle: '影像品質與圖文對比檢核'
+                    },
+                    {
+                        shortTab: '案例 3-2：多圖便當盒網格',
+                        title: '多圖排版：Bento Grid 便當盒網格與主次視覺',
+                        scenario: '案例 3-2：台日高校國際交流成果展（擺脫凌亂歪斜拼貼）',
+                        desc: '放活動花絮照片時，很多同學喜歡把照片轉得歪七扭八、加上粗框亂疊。試著用現代 Bento Grid（便當盒網格）整理照片！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 擺正歪斜照片與花俏外框',
+                                ngLabel: '照片刻意旋轉歪斜，還加上粗黃框與紅框，視覺重心搖晃混亂',
+                                okLabel: '全部回歸 0 度水平轉正，換成俐落的現代圓角與微細邊框',
+                                why: '99% 的簡報情境請不要把照片轉歪！水平與垂直轉正才能帶來穩定的專業感。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. Bento 網格等距對齊',
+                                ngLabel: '照片彼此遮擋重疊、間距忽大忽小，浪費背景空間',
+                                okLabel: '採用 CSS Grid 便當盒網格排列，保持一致的 14px 等寬間距 (Gutter)',
+                                why: '固定照片之間的間隙寬度並對齊邊線，能讓多張不同場景的照片瞬間產生整體秩序感。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 建立 1 大 3 小主次視覺',
+                                ngLabel: '4 張照片一樣小，觀眾目光在四個小框之間遊移找不到焦點',
+                                okLabel: '左側放大 1 張核心開幕大合照作為主視覺，右側搭配 3 張精選花絮',
+                                why: '多圖排版切忌「平分秋色」！挑選最具代表性的 1 張照片放大佔據左半部，才能創造視覺錨點。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-squares-four', title: 'Bento 便當盒網格', desc: '將多張圖片收斂進矩形網格中，保持四邊對齊與等寬間距' },
+                            { icon: 'ph-crop', title: '善用裁切填滿', desc: '先畫好整齊的矩形框架，再將圖片以「填滿裁切」放入框中' },
+                            { icon: 'ph-arrows-out', title: '1 大配多小原則', desc: '選出 1 張最有感染力的主角照片放大，其餘作為配角輔助說明' }
+                        ],
+                        meterTitle: '多圖拼貼秩序感與視覺主次'
+                    },
+                    {
+                        shortTab: '案例 3-3：人物介紹一致性',
+                        title: '人物圖卡：統一裁切遮罩、水平基準線與職稱標籤化',
+                        scenario: '案例 3-3：校園新創競賽團隊陣容（解決大頭照尺寸與背景混亂）',
+                        desc: '介紹團隊成員時，大家繳交的生活照長寬不一、高低參差。來看看如何將人物介紹排得像新創公司官網！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 統一裁切比例與圓形遮罩',
+                                ngLabel: '三張照片長寬比各異、背景雜亂且人像縮放大小不一',
+                                okLabel: '統一收斂進圓形遮罩 (rounded-full) 並調整為一致的臉部比例與柔和底色',
+                                why: '利用相同形狀的遮罩（圓形或圓角矩形）並統一頭像縮放比例，是整合不同來源照片的最快方法。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 視覺水平基準線對齊',
+                                ngLabel: '三張人物卡片高低錯落跳動，缺乏穩定的水平對齊軸線',
+                                okLabel: '嚴格對齊三位成員的頭像水平高度與卡片等高基準線',
+                                why: '並列的人物圖卡必須保持頂部、頭像中心與底部完全水平對齊，視覺動線才會順暢。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 職稱標籤化與重點精簡',
+                                ngLabel: '把姓名、科系、興趣與冗長自介全部塞成一整段小字',
+                                okLabel: '提煉為「膠囊職稱徽章 + 粗體大姓名 + 2 行核心專長標籤」',
+                                why: '評審只想在 3 秒內知道「誰負責什麼」！將職位角色標籤化能瞬間凸顯團隊互補優勢。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-user-focus', title: '統一臉部佔比', desc: '裁切多張人物照時，以「臉部面積一致、雙眼同高」為首要標準' },
+                            { icon: 'ph-user-circle', title: '善用幾何遮罩收邊', desc: '將不同背景的生活照放進統一圓形遮罩，版面立刻整齊劃一' },
+                            { icon: 'ph-identification-badge', title: '結構化人物資訊', desc: '職稱用彩色膠囊標籤、姓名用大粗體、專長用簡短關鍵字' }
+                        ],
+                        meterTitle: '人物圖卡專業度與一致性'
+                    }
+                ]
+            },
+            layout: {
+                tag: 'MODULE 04 • LAYOUT & VISUAL FLOW',
+                cases: [
+                    {
+                        shortTab: '案例 4-1：CRAP 對齊與留白',
+                        title: '版面留白：靠左基準線、親密性分組與 8% 安全邊距',
+                        scenario: '案例 4-1：GoTrip 智慧旅遊 App 發表（CRAP 四大設計原則）',
+                        desc: '為什麼別人的簡報看起來井然有序？秘密在於看不見的「對齊參考線」與「留白」。建議同時開啟右上角格線 (G) 觀察！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 建立靠左對齊基準線 (Alignment)',
+                                ngLabel: '主標置中、副標偏右、三張內容區塊歪斜且高低參差不齊',
+                                okLabel: '全頁標題與內容嚴格遵循「左側垂直基準線」與三欄等寬對齊',
+                                why: '人眼喜歡秩序感。只要把散落的元素「靠左對齊同一條隱形直線」，畫面立刻提升 80% 專業度。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 親密性原則：同組聚合 (Proximity)',
+                                ngLabel: '圖示、標題與說明文字各自散開，分不清哪個標題配哪段字',
+                                okLabel: '將「圖示 + 標題 + 說明」封裝進獨立結構卡片，組內緊密、組間分明',
+                                why: '彼此相關的資訊應該靠得近（親密性），不相關的區塊則拉開距離，幫助大腦快速歸類。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 保留 8% 安全呼吸邊距 (Safe Margin)',
+                                ngLabel: '文字緊貼投影片最外框（快掉出螢幕），視覺壓迫感極重',
+                                okLabel: '四周預留 8% 安全邊距留白，給予畫面優雅的呼吸空間',
+                                why: '留白不是浪費空間！充足的邊緣留白能避免投影機裁切邊角，並讓視覺焦點自然集中於中央。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-align-left', title: '對齊 (Alignment)', desc: '任何元素都不該隨意擺放，盡量統一靠左對齊基準線' },
+                            { icon: 'ph-squares-four', title: '親密性 (Proximity)', desc: '關係近的元素靠攏成組，不同組別之間留出明顯間距' },
+                            { icon: 'ph-frame-corners', title: '安全留白 (Whitespace)', desc: '投影片四邊至少保留 8% 空白，切勿把字塞到邊框線上' }
+                        ],
+                        meterTitle: 'CRAP 版面秩序與呼吸感檢測'
+                    },
+                    {
+                        shortTab: '案例 4-2：Z字視覺動線',
+                        title: '視覺動線：Z 字閱讀軌跡、編號引導與右下角行動呼籲',
+                        scenario: '案例 4-2：校園文創市集招商企劃（引導觀眾眼球移動）',
+                        desc: '當畫面四個角落塞滿一樣大的色塊時，觀眾不知道第一眼該看哪裡。善用「左上 → 右下」的視覺動線來設計版面吧！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 打破死板四等分方塊 (不對稱主次佈局)',
+                                ngLabel: '四個角落放四個一樣大的灰色方框，視覺力量互相抵消，找不到起點',
+                                okLabel: '左側設為高張力深色主視覺區，搭配右側上下分層的不對稱動線佈局',
+                                why: '切忌把版面平均切成四等份！大膽建立「左大右小」的不對稱主次結構，觀眾才知道從哪開始看。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 編號引導閱讀順序 (01 ➔ 02 ➔ 03)',
+                                ngLabel: '資訊區塊沒有編號或順序顛倒，眼球像彈珠台一樣亂跳',
+                                okLabel: '以清晰的「01 主題 ➔ 02 效益數據 ➔ 03 攤位資訊」順應 Z 字動線引導',
+                                why: '人類閱讀橫排文字的習慣是由左至右、由上而下，加上明確視覺編號能讓邏輯推進毫不費力。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 右下角黃金落點行動呼籲 (CTA)',
+                                ngLabel: '把最重要的「報名 QR Code」縮在左上角不起眼處，看完簡報就忘了',
+                                okLabel: '在視覺終點（右下角）配置高對比暖橘色 CTA 報名卡片與醒目 QR Code',
+                                why: '視覺動線的終點（右下角）是放置「結論、下一步行動或掃碼報名」的黃金落點！'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-navigation-arrow', title: '第一眼視覺起點', desc: '左上或左側應放置最大、最醒目的主標題，作為閱讀起點' },
+                            { icon: 'ph-list-numbers', title: '順應 Z 字編號引導', desc: '依循「左上 01 ➔ 右上 02 ➔ 右下 03」安排資訊邏輯順序' },
+                            { icon: 'ph-qr-code', title: '右下角黃金終點', desc: '將總結金句、聯絡資訊或行動呼籲 (CTA) 放在右下角視覺落點' }
+                        ],
+                        meterTitle: '眼球追蹤動線順暢度診斷'
+                    },
+                    {
+                        shortTab: '案例 4-3：時間軸減法設計',
+                        title: '流程與時間軸：單排水平軸線、當前階段高亮與親密對齊',
+                        scenario: '案例 4-3：畢業專題五階段時程規劃（擺脫笨重 3D 箭頭框）',
+                        desc: '很多同學愛用內建的粗大立體箭頭畫流程圖，五個階段還折成兩排。來看看現代極簡水平時間軸怎麼排！',
+                        controls: [
+                            {
+                                key: 'c1',
+                                title: '1. 化繁為簡（單排水平軸線取代兩排大箭頭）',
+                                ngLabel: '五個巨大的 3D 深藍箭頭分成兩排折返排列，箭頭比文字還搶戲',
+                                okLabel: '改用單排貫穿畫面的現代細軸線與圓形節點，5 個階段水平一字排開',
+                                why: '時間具有線性前進的特性，捨棄笨重箭頭、保持單一水平軸線（由左至右）最符合直覺認知。'
+                            },
+                            {
+                                key: 'c2',
+                                title: '2. 標亮「當前進行階段」視覺焦點',
+                                ngLabel: '五個階段長得完全一樣，評審不知道你們現在做到哪一步了',
+                                okLabel: '已完成階段淡化打勾，將 Stage 03「原型實作」放大發光並加上「進行中」徽章',
+                                why: '進度報告的核心是告訴聽眾「我們現在在哪裡」！透過大小與色彩對比標出當前階段，一目了然。'
+                            },
+                            {
+                                key: 'c3',
+                                title: '3. 節點與說明文字親密對齊',
+                                ngLabel: '月份、階段名稱與產出項目擠在同一行括號裡，難以掃讀',
+                                okLabel: '月份統一置於節點上方，標題與 2 點具體產出整齊對齊於節點下方卡片',
+                                why: '將「時間點」與「執行內容」在垂直軸線上清楚分離對齊，能讓時程表的結構一目了然。'
+                            }
+                        ],
+                        takeaways: [
+                            { icon: 'ph-git-commit', title: '點線取代粗大箭頭', desc: '捨棄老氣立體箭頭，用「細直線 + 圓點節點」打造現代感時間軸' },
+                            { icon: 'ph-arrows-horizontal', title: '單一線性水平展開', desc: '5 個以內的流程盡量排在同一水平線上，維持由左至右的連貫感' },
+                            { icon: 'ph-target', title: '高亮當前進度節點', desc: '過去階段調淡、未來階段白底、當前階段放大加亮，進度超清晰' }
+                        ],
+                        meterTitle: '流程圖清晰度與視覺負擔檢測'
+                    }
+                ]
+            }
+        };
+
+        // =========================================================================
+        // 2. QUIZ QUESTIONS DATA (8 Visual Challenges)
+        // =========================================================================
+        const quizQuestions = [
+            {
+                id: 1,
+                category: '色彩配置 • 60-30-10',
+                question: '在「60-30-10 配色法則」中，那 10% 的高對比強調色（如翡翠綠、琥珀橘）應該用在什麼地方最恰當？',
+                slidePreviewType: 'color-quiz',
+                options: [
+                    { text: '整張投影片的大面積背景底色，這樣最能吸引台下觀眾注意', correct: false, feedback: '把高彩度強調色當作 60% 背景會造成強烈的視覺疲勞與刺眼感喔！' },
+                    { text: '全頁最核心的 1 個關鍵 KPI 數據、核心結論或行動呼籲標籤', correct: true, feedback: '完全正確！強調色只佔 10%，用在最關鍵的數據（例如 +68%），才能瞬間引導觀眾視覺焦點。' },
+                    { text: '把每一行內文都換成不同強調色，讓整頁看起來豐富繽紛', correct: false, feedback: '當整頁五顏六色時，所有顏色會互相搶戲，反而沒有任何重點。' },
+                    { text: '用在頁碼、日期與裝飾性邊框上', correct: false, feedback: '次要資訊若使用高對比強調色，會把觀眾的目光從核心內容吸走。' }
+                ]
+            },
+            {
+                id: 2,
+                category: '色彩配置 • 數據圖表',
+                question: '當你在簡報中放入一張「高中生社團參與動機長條圖」，想強調「累積學習歷程 (64%)」排名第一時，哪種做法最專業？',
+                slidePreviewType: 'chart-quiz',
+                options: [
+                    { text: '將 5 根長條塗上紅、橙、黃、綠、紫五種鮮豔彩虹色，並在旁邊放色塊圖例', correct: false, feedback: '彩虹圖表會讓觀眾眼花撩亂，且必須頻頻對照圖例，看不出哪一條才是重點。' },
+                    { text: '將次要項目設為中性淺灰色 (#CBD5E1)，僅將第一名塗上醒目主色，並把標題直接改為結論句', correct: true, feedback: '太專業了！這稱為「圖表色彩降噪」搭配「結論式標題」，讓主角數據一秒跳出來！' },
+                    { text: '加上粗黑格線與深藍漸層背景，展現複雜度', correct: false, feedback: '粗黑格線與花俏底圖屬於視覺雜訊，會干擾對數據本身的閱讀。' },
+                    { text: '把長條圖拉扁並加上 3D 立體旋轉效果', correct: false, feedback: '3D 變形會扭曲長條的視覺高度比例，是數據視覺化的大忌。' }
+                ]
+            },
+            {
+                id: 3,
+                category: '文字排版 • 字體與精簡',
+                question: '上台報告時，為什麼專業簡報設計師強烈建議使用「黑體（如思源黑體 Noto Sans TC）」而非「新細明體」？',
+                slidePreviewType: 'typo-quiz',
+                options: [
+                    { text: '因為新細明體檔案容量太大，會讓簡報跑不動', correct: false, feedback: '字體檔案大小並不會影響簡報播放流暢度喔！' },
+                    { text: '因為新細明體橫筆極細且末端有襯線，在投影幕發光環境下遠看容易模糊斷裂', correct: true, feedback: '答對了！黑體（無襯線體）筆畫粗細均勻，即使坐在教室最後一排也能輕鬆辨識。' },
+                    { text: '因為新細明體不能調整字級大小與粗體', correct: false, feedback: '新細明體雖然可以調粗體，但橫細直粗的筆畫結構依然不適合遠距離螢幕投影。' },
+                    { text: '因為黑體可以把 300 個字塞進同一頁還不會被發現', correct: false, feedback: '無論用什麼字體，都不該在一頁塞滿 300 字喔！簡報仍須精簡關鍵字。' }
+                ]
+            },
+            {
+                id: 4,
+                category: '文字排版 • 表格設計',
+                question: '在簡報中製作「專題軟體方案評比表」時，以下哪種排版方式能讓台下評審最快掃讀並做出決策？',
+                slidePreviewType: 'table-quiz',
+                options: [
+                    { text: '保留 Excel 預設的粗黑田字格線，並將所有長篇文字與金額全部「置中對齊」', correct: false, feedback: '粗黑垂直線會造成視覺壓迫，且長短不一的文字置中會讓每行起點不齊、極難閱讀。' },
+                    { text: '去除垂直格線僅留水平細線，遵循「文字靠左、數字靠右」，並將推薦方案整欄加上高亮底色', correct: true, feedback: '滿分觀念！減法框線搭配「文左數右」與整欄高亮，是商務簡報表格的黃金標準。' },
+                    { text: '把表格的每個格子塗上不同底色，並把字級縮小到 10pt', correct: false, feedback: '10pt 的表格在投影幕上完全看不見，五顏六色的格子也會干擾閱讀。' },
+                    { text: '不要標示推薦方案，讓評審自己在台上慢慢算哪個划算', correct: false, feedback: '簡報表格的目的是協助決策，直接高亮標出「最推薦方案」最能展現專業度！' }
+                ]
+            },
+            {
+                id: 5,
+                category: '圖片視覺 • 圖文融合',
+                question: '當你找了一張很棒的咖啡莊園風景照當作滿版背景，卻發現照片明暗交錯，導致上面的白色標題字看不清楚時，最佳解法是什麼？',
+                slidePreviewType: 'image-quiz',
+                options: [
+                    { text: '把照片上下硬拉壓扁，擠出上面一條白色空白處來放字', correct: false, feedback: '千萬別拉扯圖片比例！變形的照片會立刻破壞簡報質感。' },
+                    { text: '把標題字改成亮綠色配粉紅色外框，跟背景拼了', correct: false, feedback: '高飽和撞色外框會讓畫面變得像早安長輩圖，失去專業感。' },
+                    { text: '在圖片與文字之間疊加一層「半透明深色漸層遮罩 (Scrim Overlay)」', correct: true, feedback: '太棒了！加一層由左至右的深色漸層遮罩，既能保留照片氛圍，又能讓白色文字清晰浮現。' },
+                    { text: '把字級縮小到 12pt，塞在照片角落最暗的地方', correct: false, feedback: '12pt 的標題後排完全看不見，反而喪失了標題的意義。' }
+                ]
+            },
+            {
+                id: 6,
+                category: '圖片視覺 • 多圖網格',
+                question: '在成果報告中需要放入 4 張國際交流活動照片時，如何排版才能避免畫面看起來像凌亂的拼貼簿？',
+                slidePreviewType: 'bento-quiz',
+                options: [
+                    { text: '把 4 張照片分別旋轉 -15 度與 +15 度斜放，並加上粗黃色外框互相重疊', correct: false, feedback: '歪斜旋轉與老氣粗框會讓視覺重心失衡，且互相遮擋會浪費畫面空間。' },
+                    { text: '不裁切直接硬拉長寬塞進四個角落，就算人物變胖變扁也沒關係', correct: false, feedback: '拉扯變形是簡報大忌！請務必使用「等比例縮放＋裁切」來處理圖片。' },
+                    { text: '採用 Bento Grid（便當盒網格）：轉正對齊、保持等距間隙，並放大 1 張核心合照作為主視覺', correct: true, feedback: '完全正確！透過網格對齊與「1 大 3 小」的主次分配，能讓多圖頁面既整齊又有張力。' },
+                    { text: '4 張照片全部縮到像郵票一樣小，散落在文字段落中間', correct: false, feedback: '照片太小看不出細節，散落在文字中也會打斷閱讀動線。' }
+                ]
+            },
+            {
+                id: 7,
+                category: '版面留白 • 安全邊距',
+                question: '觀察多數質感極佳的商業簡報，會發現投影片四周邊緣都有約 8% 的空白區域（不放任何文字）。這主要遵循什麼設計考量？',
+                slidePreviewType: 'layout-quiz',
+                options: [
+                    { text: '安全邊距與呼吸感留白：避免投影幕裁切邊緣，並將視覺焦點自然聚攏於中央', correct: true, feedback: '正解！預留安全邊距（Safe Margin）能消除壓迫感，讓版面看起來從容大器。' },
+                    { text: '因為簡報軟體的邊緣 8% 無法輸入文字', correct: false, feedback: '軟體邊緣是可以放字的，但貼齊邊框會造成極大的視覺壓迫感。' },
+                    { text: '為了省下投影機燈泡電力', correct: false, feedback: '留白是為了人類視覺認知的舒適度，與投影機耗電無關喔！' },
+                    { text: '留給觀眾上台做筆記使用', correct: false, feedback: '這是排版的安全留白區（Whitespace），能大幅提升遠距離閱讀品質。' }
+                ]
+            },
+            {
+                id: 8,
+                category: '版面留白 • 時間軸與動線',
+                question: '【綜合診斷】當你要設計一頁「畢業專題五階段時程表」時，以下哪個做法最符合現代簡報減法設計與視覺動線？',
+                slidePreviewType: 'compare-quiz',
+                options: [
+                    { text: '用五個巨大的 3D 立體深藍箭頭分成兩排折返排列，每個箭頭裡塞滿長文', correct: false, feedback: '粗大 3D 箭頭會製造視覺噪音，兩排折返動線也會打亂時間推進的直覺感。' },
+                    { text: '把月份全部放最上面，階段名稱放中間，說明放最下面，彼此不對齊', correct: false, feedback: '這違反了「親密性與對齊原則」！每個階段的資訊應該垂直對齊節點。' },
+                    { text: '採用單排水平連接軸線，將日期與產出親密對齊於節點上下，並將「當前進行中階段」放大高亮顯示', correct: true, feedback: '完美診斷！兼顧了單排線性動線、親密性對齊、減法設計與重點聚焦，你已經具備專業簡報設計師的眼光了！' },
+                    { text: '將第 1 階段放右下角、第 5 階段放左上角，倒著排列考驗評審眼力', correct: false, feedback: '違背自然閱讀動線（由左至右）會讓觀眾在理解時間順序時感到混亂。' }
+                ]
+            }
+        ];
+
+        // =========================================================================
+        // 3. UI RENDERING & KEYBOARD SHORTCUT HANDLERS
+        // =========================================================================
+        function initApp() {
+            renderTopTabs();
+            renderInspector();
+            renderSlideViewport();
+            renderBottomTakeaways();
+            updateGlobalProgress();
+
+            // Keyboard Shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (state.currentModule === 'quiz') return;
+                if (e.code === 'Space' && !state.isComparingNG && document.activeElement.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    startCompareHold();
+                } else if (e.key === '1') {
+                    toggleControl(state.currentModule, 'c1');
+                } else if (e.key === '2') {
+                    toggleControl(state.currentModule, 'c2');
+                } else if (e.key === '3') {
+                    toggleControl(state.currentModule, 'c3');
+                } else if (e.key.toLowerCase() === 'g') {
+                    toggleGridOverlay();
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space' && state.isComparingNG) {
+                    endCompareHold();
+                }
+            });
+        }
+
+        function switchModule(moduleName) {
+            state.currentModule = moduleName;
+            const leftInspector = document.getElementById('left-inspector');
+            const canvasWorkspace = document.getElementById('canvas-workspace');
+            const quizWorkspace = document.getElementById('quiz-workspace');
+            const quickActionGroup = document.getElementById('quick-action-group');
+
+            renderTopTabs();
+
+            if (moduleName === 'quiz') {
+                leftInspector.classList.add('hidden');
+                canvasWorkspace.classList.add('hidden');
+                quizWorkspace.classList.remove('hidden');
+                quickActionGroup.classList.add('opacity-0', 'pointer-events-none');
+                renderQuiz();
+            } else {
+                leftInspector.classList.remove('hidden');
+                canvasWorkspace.classList.remove('hidden');
+                quizWorkspace.classList.add('hidden');
+                quickActionGroup.classList.remove('opacity-0', 'pointer-events-none');
+                renderInspector();
+                renderSlideViewport();
+                renderBottomTakeaways();
+            }
+        }
+
+        function switchCase(caseIdx) {
+            if (state.currentModule === 'quiz') return;
+            state.currentCaseIndex[state.currentModule] = caseIdx;
+            renderInspector();
+            renderSlideViewport();
+            renderBottomTakeaways();
+        }
+
+        function getCurrentCaseSpec() {
+            const mod = state.currentModule;
+            if (mod === 'quiz') return null;
+            const idx = state.currentCaseIndex[mod];
+            return moduleSpecs[mod].cases[idx];
+        }
+
+        function renderTopTabs() {
+            const modules = ['color', 'typo', 'image', 'layout', 'quiz'];
+            modules.forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                if (!btn) return;
+                if (state.currentModule === m) {
+                    btn.className = 'module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white shadow-md shadow-indigo-600/30 transition-all';
+                } else {
+                    btn.className = 'module-tab flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all';
+                }
+
+                if (m !== 'quiz') {
+                    const badge = document.getElementById(`badge-${m}`);
+                    let fixedCount = 0;
+                    state.toggles[m].forEach(caseObj => {
+                        fixedCount += Object.values(caseObj).filter(Boolean).length;
+                    });
+                    badge.textContent = `${fixedCount}/9`;
+                    if (fixedCount === 9) {
+                        badge.className = 'text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                    } else if (fixedCount > 0) {
+                        badge.className = 'text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                    } else {
+                        badge.className = 'text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                    }
+                }
+            });
+        }
+
+        function updateGlobalProgress() {
+            let totalFixed = 0;
+            ['color', 'typo', 'image', 'layout'].forEach(m => {
+                state.toggles[m].forEach(caseObj => {
+                    totalFixed += Object.values(caseObj).filter(Boolean).length;
+                });
+            });
+            const pct = Math.round((totalFixed / 36) * 100);
+            document.getElementById('global-progress-bar').style.width = `${pct}%`;
+            document.getElementById('global-progress-text').textContent = `${totalFixed}/36`;
+            renderTopTabs();
+        }
+
+        function toggleControl(moduleName, key) {
+            const idx = state.currentCaseIndex[moduleName];
+            state.toggles[moduleName][idx][key] = !state.toggles[moduleName][idx][key];
+            renderInspector();
+            renderSlideViewport();
+            updateGlobalProgress();
+        }
+
+        function setAllCurrentCase(val) {
+            if (state.currentModule === 'quiz') return;
+            const mod = state.currentModule;
+            const idx = state.currentCaseIndex[mod];
+            Object.keys(state.toggles[mod][idx]).forEach(k => {
+                state.toggles[mod][idx][k] = val;
+            });
+            renderInspector();
+            renderSlideViewport();
+            updateGlobalProgress();
+        }
+
+        function toggleGridOverlay() {
+            state.showGrid = !state.showGrid;
+            const grid = document.getElementById('grid-overlay');
+            const btn = document.getElementById('btn-grid-overlay');
+            if (state.showGrid) {
+                grid.classList.remove('hidden');
+                grid.classList.add('absolute');
+                btn.className = 'px-3 py-1 rounded-md text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 transition flex items-center gap-1.5';
+            } else {
+                grid.classList.add('hidden');
+                grid.classList.remove('absolute');
+                btn.className = 'px-3 py-1 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5';
+            }
+        }
+
+        function startCompareHold() {
+            state.isComparingNG = true;
+            document.getElementById('compare-badge').classList.remove('hidden');
+            renderSlideViewport();
+        }
+
+        function endCompareHold() {
+            if (!state.isComparingNG) return;
+            state.isComparingNG = false;
+            document.getElementById('compare-badge').classList.add('hidden');
+            renderSlideViewport();
+        }
+
+        // =========================================================================
+        // 4. LEFT INSPECTOR PANEL RENDERER
+        // =========================================================================
+        function renderInspector() {
+            const mod = state.currentModule;
+            if (mod === 'quiz') return;
+
+            const modData = moduleSpecs[mod];
+            const caseIdx = state.currentCaseIndex[mod];
+            const spec = modData.cases[caseIdx];
+            const currentToggles = state.toggles[mod][caseIdx];
+            const remainingErrors = Object.values(currentToggles).filter(v => !v).length;
+
+            document.getElementById('inspector-tag').textContent = modData.tag;
+            document.getElementById('inspector-title').textContent = spec.title;
+            document.getElementById('inspector-desc').textContent = spec.desc;
+            document.getElementById('slide-scenario-label').textContent = spec.scenario;
+
+            // Render 3-Case Switcher Bar
+            const caseBar = document.getElementById('case-selector-bar');
+            caseBar.innerHTML = modData.cases.map((cItem, idx) => {
+                const isSelected = idx === caseIdx;
+                const cToggles = state.toggles[mod][idx];
+                const fixedCount = Object.values(cToggles).filter(Boolean).length;
+                const dotColor = fixedCount === 3 ? 'bg-emerald-400' : (fixedCount > 0 ? 'bg-amber-400' : 'bg-rose-500');
+
+                return `
+                    <button onclick="switchCase(${idx})" class="px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
+                        isSelected 
+                            ? 'bg-indigo-600 text-white font-bold shadow' 
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    }">
+                        <span class="w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}"></span>
+                        <span class="truncate">${cItem.shortTab.split('：')[1] || cItem.shortTab}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const statusPill = document.getElementById('inspector-status-pill');
+            if (remainingErrors === 0) {
+                statusPill.textContent = '✨ 完美過關';
+                statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else if (remainingErrors === 3) {
+                statusPill.textContent = '🚨 NG 災難狀態';
+                statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+            } else {
+                statusPill.textContent = `🔧 改造中 (剩 ${remainingErrors} 個地雷)`;
+                statusPill.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            }
+
+            // Render Control Cards
+            const controlsContainer = document.getElementById('inspector-controls');
+            controlsContainer.innerHTML = spec.controls.map(ctrl => {
+                const isFixed = currentToggles[ctrl.key];
+                return `
+                    <div onclick="toggleControl('${mod}', '${ctrl.key}')" 
+                         class="group cursor-pointer rounded-xl p-3.5 border transition-all duration-200 ${
+                            isFixed 
+                                ? 'bg-slate-800/70 border-emerald-500/40 shadow-sm shadow-emerald-500/5' 
+                                : 'bg-slate-900/90 border-rose-500/40 hover:border-rose-400/60'
+                         }">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="font-bold text-sm text-white group-hover:text-indigo-300 transition">${ctrl.title}</span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded ${
+                                    isFixed 
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                }">
+                                    ${isFixed ? '✓ 已修復 (OK)' : '✕ 踩雷中 (NG)'}
+                                </span>
+                                <div class="w-9 h-5 rounded-full p-0.5 transition-colors duration-200 ${isFixed ? 'bg-emerald-500' : 'bg-slate-700'}">
+                                    <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform duration-200 ${isFixed ? 'translate-x-4' : 'translate-x-0'}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-xs rounded-lg p-2.5 mb-2 ${
+                            isFixed 
+                                ? 'bg-emerald-950/40 text-emerald-200 border border-emerald-500/20' 
+                                : 'bg-rose-950/40 text-rose-200 border border-rose-500/20'
+                        }">
+                            <div class="flex items-start gap-1.5">
+                                <i class="ph-fill ${isFixed ? 'ph-check-circle text-emerald-400' : 'ph-warning-circle text-rose-400'} text-sm shrink-0 mt-0.5"></i>
+                                <span>${isFixed ? ctrl.okLabel : ctrl.ngLabel}</span>
+                            </div>
+                        </div>
+
+                        <p class="text-[11px] text-slate-400 leading-relaxed pl-1">
+                            <strong class="text-slate-300">設計原理：</strong>${ctrl.why}
+                        </p>
+                    </div>
+                `;
+            }).join('');
+
+            renderInspectorMeter(mod, caseIdx, currentToggles, spec.meterTitle);
+        }
+
+        function renderInspectorMeter(mod, caseIdx, t, meterTitle) {
+            const meter = document.getElementById('inspector-meter');
+            const fixedCount = Object.values(t).filter(Boolean).length;
+            const allOk = fixedCount === 3;
+
+            // Live 60-30-10 Color Bar for Color Case 1-1
+            if (mod === 'color' && caseIdx === 0) {
+                meter.innerHTML = `
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="font-semibold text-slate-300">${meterTitle}</span>
+                        <span class="font-mono text-[11px] ${allOk ? 'text-emerald-400 font-bold' : 'text-rose-400'}">${allOk ? '黃金比例達成' : '色彩比例失衡'}</span>
+                    </div>
+                    <div class="h-5 w-full rounded-lg overflow-hidden flex border border-slate-700 text-[10px] font-mono font-bold">
+                        ${allOk ? `
+                            <div class="w-[60%] bg-slate-100 text-slate-800 flex items-center justify-center">60% #F8FAFC 底色</div>
+                            <div class="w-[30%] bg-slate-800 text-white flex items-center justify-center">30% #1E293B 主色</div>
+                            <div class="w-[10%] bg-emerald-500 text-slate-950 flex items-center justify-center">10%</div>
+                        ` : `
+                            <div class="w-[35%] bg-yellow-300 text-slate-900 flex items-center justify-center">螢光底</div>
+                            <div class="w-[25%] bg-red-600 text-white flex items-center justify-center">亮紅</div>
+                            <div class="w-[20%] bg-fuchsia-600 text-white flex items-center justify-center">亮紫</div>
+                            <div class="w-[20%] bg-cyan-400 text-slate-900 flex items-center justify-center">亮藍</div>
+                        `}
+                    </div>
+                `;
+                return;
+            }
+
+            const labels = ['開關 1', '開關 2', '開關 3'];
+            meter.innerHTML = `
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-300">${meterTitle}</span>
+                    <span class="font-mono text-[11px] ${allOk ? 'text-emerald-400 font-bold' : 'text-amber-400'}">完成度 ${Math.round((fixedCount / 3) * 100)}%</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div class="p-1.5 rounded border ${t.c1 ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
+                        ${labels[0]}：${t.c1 ? '✓ 通過' : '✕ 待修正'}
+                    </div>
+                    <div class="p-1.5 rounded border ${t.c2 ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
+                        ${labels[1]}：${t.c2 ? '✓ 通過' : '✕ 待修正'}
+                    </div>
+                    <div class="p-1.5 rounded border ${t.c3 ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}">
+                        ${labels[2]}：${t.c3 ? '✓ 通過' : '✕ 待修正'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBottomTakeaways() {
+            const spec = getCurrentCaseSpec();
+            if (!spec) return;
+            const container = document.getElementById('bottom-takeaway');
+            container.innerHTML = `
+                <div class="grid grid-cols-3 gap-6">
+                    ${spec.takeaways.map(item => `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                                <i class="ph-fill ${item.icon} text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">${item.title}</h4>
+                                <p class="text-[11px] text-slate-400 leading-snug mt-0.5">${item.desc}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // 5. DYNAMIC 16:9 SLIDE CANVAS RENDERER (12 COMPLETE INTERACTIVE CASES)
+        // =========================================================================
+        function renderSlideViewport() {
+            const viewport = document.getElementById('slide-viewport');
+            const mod = state.currentModule;
+            if (mod === 'quiz') return;
+
+            const caseIdx = state.currentCaseIndex[mod];
+            const rawToggles = state.toggles[mod][caseIdx];
+            const t = state.isComparingNG
+                ? { c1: false, c2: false, c3: false }
+                : rawToggles;
+
+            if (mod === 'color') {
+                if (caseIdx === 0) viewport.innerHTML = buildColorCase1(t);
+                else if (caseIdx === 1) viewport.innerHTML = buildColorCase2(t);
+                else viewport.innerHTML = buildColorCase3(t);
+            } else if (mod === 'typo') {
+                if (caseIdx === 0) viewport.innerHTML = buildTypoCase1(t);
+                else if (caseIdx === 1) viewport.innerHTML = buildTypoCase2(t);
+                else viewport.innerHTML = buildTypoCase3(t);
+            } else if (mod === 'image') {
+                if (caseIdx === 0) viewport.innerHTML = buildImageCase1(t);
+                else if (caseIdx === 1) viewport.innerHTML = buildImageCase2(t);
+                else viewport.innerHTML = buildImageCase3(t);
+            } else if (mod === 'layout') {
+                if (caseIdx === 0) viewport.innerHTML = buildLayoutCase1(t);
+                else if (caseIdx === 1) viewport.innerHTML = buildLayoutCase2(t);
+                else viewport.innerHTML = buildLayoutCase3(t);
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // COLOR CASE 1-1: 60-30-10 黃金配色法則 (校園永續減塑行動提案)
+        // -------------------------------------------------------------------------
+        function buildColorCase1(t) {
+            const bgClass = t.c1 ? 'bg-[#F8FAFC]' : 'bg-gradient-to-br from-[#ffff00] via-[#a3ff00] to-[#ff00aa]';
+            const headerTagClass = t.c2 ? 'bg-[#1E293B] text-slate-100' : 'bg-red-600 text-green-300 border-2 border-purple-600';
+            const mainTitleClass = t.c2 ? 'text-[#0F172A]' : 'text-red-600 drop-shadow-[2px_2px_0px_#00ff00]';
+            const subTextClass = t.c2 ? 'text-slate-600' : 'text-lime-800 font-bold';
+            const cardBgClass = t.c2 ? 'bg-white border border-slate-200 shadow-sm text-slate-700' : 'bg-yellow-200/90 border-4 border-red-500 text-green-700';
+            const sidePanelClass = t.c2 ? 'bg-[#1E293B] text-white shadow-xl' : 'bg-fuchsia-600 border-4 border-yellow-300 text-cyan-200';
+            const badge1Class = t.c3 ? (t.c2 ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-white') : 'bg-purple-600 text-yellow-300';
+            const badge2Class = t.c3 ? (t.c2 ? 'bg-slate-100 text-slate-800' : 'bg-slate-700 text-white') : 'bg-blue-600 text-pink-200';
+            const heroStatColor = t.c3 ? 'text-[#10B981]' : 'text-yellow-300 underline decoration-wavy decoration-red-500';
+            const ctaHighlight = t.c3 ? 'bg-[#10B981] text-slate-950 font-bold' : 'bg-cyan-400 text-red-600 border-2 border-blue-800 font-bold';
+
+            return `
+                <div class="w-full h-full ${bgClass} p-[7%] flex flex-col justify-between slide-element">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold tracking-wider ${headerTagClass} slide-element">
+                                2026 校園永續發展計畫 • SUSTAINABILITY
+                            </span>
+                            <span class="text-xs font-mono ${subTextClass}">CASE 1-1</span>
+                        </div>
+                        <h1 class="text-3xl lg:text-4xl font-black tracking-tight ${mainTitleClass} slide-element">
+                            校園減塑行動：全面導入智慧循環杯機制
+                        </h1>
+                        <p class="text-sm mt-1.5 ${subTextClass} slide-element">
+                            透過校內餐飲聯盟與智慧歸還站，打造零廢棄綠色大學生活圈
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-5 my-auto pt-2">
+                        <div class="col-span-7 space-y-3.5 flex flex-col justify-center">
+                            <div class="p-4 rounded-xl ${cardBgClass} slide-element">
+                                <div class="flex items-center gap-2.5 mb-1">
+                                    <span class="px-2.5 py-0.5 rounded text-xs font-bold ${badge1Class}">策略一：源頭減量</span>
+                                    <h3 class="font-bold text-base ${t.c2 ? 'text-[#0F172A]' : 'text-red-700'}">校內 18 間餐廳全面停用一次性塑膠杯</h3>
+                                </div>
+                                <p class="text-xs leading-relaxed ${t.c2 ? 'text-slate-600' : 'text-green-800'}">
+                                    學生憑學生證即可免費借用不鏽鋼與 PP 循環杯，甲地借、乙地還，掃碼歸還僅需 3 秒鐘。
+                                </p>
+                            </div>
+
+                            <div class="p-4 rounded-xl ${cardBgClass} slide-element">
+                                <div class="flex items-center gap-2.5 mb-1">
+                                    <span class="px-2.5 py-0.5 rounded text-xs font-bold ${badge2Class}">策略二：集點回饋</span>
+                                    <h3 class="font-bold text-base ${t.c2 ? 'text-[#0F172A]' : 'text-blue-800'}">自備環保杯享每杯折抵與永續積分</h3>
+                                </div>
+                                <p class="text-xs leading-relaxed ${t.c2 ? 'text-slate-600' : 'text-purple-900'}">
+                                    累積滿 20 點可兌換校園咖啡券，激勵全校師生養成日常減塑習慣。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="col-span-5 rounded-2xl p-5 flex flex-col justify-between ${sidePanelClass} slide-element">
+                            <div>
+                                <div class="text-xs font-medium opacity-80">循環杯歸還率與減塑成效 KPI</div>
+                                <div class="text-5xl font-black tracking-tight my-2 ${heroStatColor} slide-element">
+                                    +68%
+                                </div>
+                                <p class="text-xs leading-relaxed opacity-90">
+                                    預計首年可減少 <strong>120,000 個</strong> 一次性塑膠杯垃圾，相當於減少 4.2 公噸碳排放。
+                                </p>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+                                <span class="text-[11px] opacity-80">試行達成率預估</span>
+                                <span class="px-2.5 py-1 rounded-md text-xs ${ctaHighlight} slide-element">
+                                    ★ 核心指標 Top 1
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] pt-2 border-t ${t.c2 ? 'border-slate-200 text-slate-400' : 'border-red-500 text-red-700 font-bold'}">
+                        <span>學生會永續發展部提案報告</span>
+                        <span>色彩原則：60% #F8FAFC 底色 / 30% #1E293B 主色 / 10% #10B981 重點</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // COLOR CASE 1-2: 數據圖表色彩降噪 (高中生社團參與動機調查長條圖)
+        // -------------------------------------------------------------------------
+        function buildColorCase2(t) {
+            // c1: Muted neutral gray (#CBD5E1) + Deep Indigo (#4F46E5) for #1 top bar vs 5 rainbow bars
+            // c2: Clean borderless chart with direct data labels vs heavy black gridlines & gradient chart box
+            // c3: Conclusion-driven title with highlighted keyword vs generic title
+
+            const slideBg = t.c2 ? 'bg-white text-slate-800' : 'bg-slate-200 text-slate-900';
+            const chartBoxBg = t.c2 ? 'bg-slate-50/70 border border-slate-200/80' : 'bg-gradient-to-b from-blue-300 to-amber-200 border-4 border-black';
+            const gridLineClass = t.c2 ? 'border-b border-dashed border-slate-200/80' : 'border-b-2 border-black';
+
+            const bars = [
+                { label: '累積學習歷程', val: 64, h: '92%', ngColor: 'bg-red-600 border-2 border-yellow-300', okColor: 'bg-[#4F46E5] shadow-lg shadow-indigo-500/25', isHero: true },
+                { label: '結交志同道合朋友', val: 48, h: '68%', ngColor: 'bg-lime-500 border-2 border-red-600', okColor: 'bg-[#CBD5E1]' },
+                { label: '培養課外興趣專長', val: 41, h: '58%', ngColor: 'bg-purple-600 border-2 border-cyan-300', okColor: 'bg-[#CBD5E1]' },
+                { label: '學長姐口碑推薦', val: 26, h: '37%', ngColor: 'bg-amber-400 border-2 border-blue-700', okColor: 'bg-[#CBD5E1]' },
+                { label: '紓解升學課業壓力', val: 19, h: '28%', ngColor: 'bg-pink-500 border-2 border-green-400', okColor: 'bg-[#CBD5E1]' }
+            ];
+
+            return `
+                <div class="w-full h-full ${slideBg} p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">HIGH SCHOOL CLUB SURVEY • 數據圖表色彩降噪</span>
+                            <h1 class="text-2xl lg:text-3xl font-black mt-1 text-slate-900">
+                                ${t.c3 
+                                    ? '高達 <span class="text-[#4F46E5] underline decoration-indigo-300 decoration-4 underline-offset-4">64% 學生因「累積學習歷程」</span>加入學術社團' 
+                                    : '社團參與動機統計圖'}
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">CASE 1-2</span>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-6 my-auto py-3 items-center">
+                        <!-- Chart Area -->
+                        <div class="${t.c2 ? 'col-span-8' : 'col-span-9'} ${chartBoxBg} rounded-2xl p-5 relative h-64 flex flex-col justify-end">
+                            <div class="absolute inset-x-5 top-6 bottom-12 flex flex-col justify-between pointer-events-none">
+                                <div class="${gridLineClass} w-full text-[10px] ${t.c2 ? 'text-slate-400' : 'text-black font-bold'}">70%</div>
+                                <div class="${gridLineClass} w-full text-[10px] ${t.c2 ? 'text-slate-400' : 'text-black font-bold'}">50%</div>
+                                <div class="${gridLineClass} w-full text-[10px] ${t.c2 ? 'text-slate-400' : 'text-black font-bold'}">30%</div>
+                                <div class="border-b ${t.c2 ? 'border-slate-300' : 'border-black border-2'} w-full"></div>
+                            </div>
+
+                            <div class="relative z-10 grid grid-cols-5 gap-4 items-end h-44 pt-4 px-3">
+                                ${bars.map(b => `
+                                    <div class="flex flex-col items-center h-full justify-end">
+                                        <div class="mb-1.5 text-center">
+                                            ${t.c2 ? `
+                                                <span class="font-mono text-xs ${b.isHero ? 'font-black text-sm text-[#4F46E5] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200' : 'text-slate-500 font-semibold'}">
+                                                    ${b.val}% ${b.isHero ? '★' : ''}
+                                                </span>
+                                            ` : `
+                                                <span class="text-[10px] font-bold text-black opacity-50">?</span>
+                                            `}
+                                        </div>
+                                        <div style="height: ${b.h}" class="w-full max-w-[54px] rounded-t-lg transition-all duration-500 ${t.c1 ? b.okColor : b.ngColor}"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="grid grid-cols-5 gap-2 text-center pt-2 px-2">
+                                ${bars.map(b => `
+                                    <div class="text-[11px] truncate ${b.isHero && t.c1 ? 'font-bold text-[#4F46E5]' : (t.c2 ? 'text-slate-600' : 'text-black font-bold')}">${b.label}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Right Legend / Insight Box -->
+                        <div class="${t.c2 ? 'col-span-4' : 'col-span-3'}">
+                            ${!t.c2 ? `
+                                <div class="p-3 rounded-xl bg-white border-2 border-black text-xs space-y-2">
+                                    <div class="font-bold text-black mb-1">圖例 (請對照顏色)：</div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-600 inline-block"></span> 累積學習歷程</div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-lime-500 inline-block"></span> 結交朋友</div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-purple-600 inline-block"></span> 培養興趣</div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-400 inline-block"></span> 學長姐推薦</div>
+                                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-pink-500 inline-block"></span> 紓解壓力</div>
+                                    <div class="text-[10px] text-rose-600 font-bold pt-1">⚠️ 粗黑格線與花俏底色干擾閱讀！</div>
+                                </div>
+                            ` : `
+                                <div class="p-5 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-slate-800 space-y-3">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#4F46E5] text-white">核心洞察結論</span>
+                                    <div class="text-3xl font-black text-[#4F46E5] font-mono">64%</div>
+                                    <p class="text-xs leading-relaxed text-slate-600">
+                                        108 課綱上路後，超過六成高一新生優先選擇能產出具體專案成果與競賽經歷的學術型社團。
+                                    </p>
+                                    <div class="pt-2 border-t border-indigo-200/60 text-[11px] font-semibold text-[#4F46E5]">
+                                        ✓ 灰階弱化次要項 + 直接標註數值
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2">
+                        <span>資料來源：全國高中職社團參與行為調查 (N=1,850, 可複選)</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 完美達成數據圖表降噪與結論破題' : '⚠️ 預設彩虹圖表與描述式標題缺乏說服力'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // COLOR CASE 1-3: 深色科技感模式 (AI 世代自主學習論壇)
+        // -------------------------------------------------------------------------
+        function buildColorCase3(t) {
+            const bgStyle = t.c1 ? 'bg-[#0F172A] text-[#F1F5F9]' : 'bg-[#000000] text-[#00FF00]';
+            const badge1 = t.c2 ? 'bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30' : 'bg-[#0000FF] text-white';
+            const badge2 = t.c2 ? 'bg-[#A855F7]/15 text-[#A855F7] border border-[#A855F7]/30' : 'bg-[#FF0000] text-yellow-300';
+            const cardStyle = t.c3
+                ? 'bg-slate-800/70 backdrop-blur-md border border-slate-700 shadow-xl rounded-2xl'
+                : 'bg-black border-4 border-white rounded-none';
+
+            return `
+                <div class="w-full h-full ${bgStyle} p-[7%] flex flex-col justify-between relative overflow-hidden slide-element">
+                    ${t.c1 ? `
+                        <div class="absolute -top-24 -left-24 w-72 h-72 bg-sky-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                    ` : ''}
+
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-mono font-semibold ${badge1}">
+                                AI SELF-DIRECTED LEARNING FORUM
+                            </span>
+                            <span class="text-xs font-mono opacity-75">CASE 1-3 • DARK MODE</span>
+                        </div>
+                        <h1 class="text-3xl lg:text-4xl font-black tracking-tight ${t.c1 ? 'text-[#F1F5F9]' : 'text-[#00FF00] drop-shadow-[0_0_8px_#00FF00]'}">
+                            AI 世代自主學習論壇：打造個人化數位學伴
+                        </h1>
+                        <p class="text-sm mt-1.5 ${t.c1 ? 'text-slate-400' : 'text-[#FF0000] font-bold'}">
+                            善用生成式 AI 引導提問、跨領域探索與即時回饋，翻轉傳統單向授課模式
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 grid grid-cols-3 gap-5 my-auto py-3">
+                        <div class="p-5 ${cardStyle} flex flex-col justify-between">
+                            <div>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold ${badge1}">PILLAR 01</span>
+                                <h3 class="text-lg font-bold mt-2 mb-1.5 ${t.c1 ? 'text-white' : 'text-[#00FF00]'}">蘇格拉底式引導提問</h3>
+                                <p class="text-xs leading-relaxed ${t.c1 ? 'text-slate-300' : 'text-[#00FF00]'}">
+                                    不直接給答案，而是透過階層式追問啟發學生獨立思考與除錯能力。
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t ${t.c3 ? 'border-slate-700' : 'border-white'} flex items-baseline justify-between">
+                                <span class="text-[11px] opacity-75">深度思考停留時間</span>
+                                <span class="text-2xl font-black font-mono ${t.c2 ? 'text-[#38BDF8]' : 'text-[#0000FF] bg-white px-1'}">+64%</span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 ${cardStyle} flex flex-col justify-between">
+                            <div>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold ${badge2}">PILLAR 02</span>
+                                <h3 class="text-lg font-bold mt-2 mb-1.5 ${t.c1 ? 'text-white' : 'text-[#00FF00]'}">多模態概念具象化</h3>
+                                <p class="text-xs leading-relaxed ${t.c1 ? 'text-slate-300' : 'text-[#00FF00]'}">
+                                    將抽象的物理公式與歷史脈絡即時轉化為互動圖表與模擬情境。
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t ${t.c3 ? 'border-slate-700' : 'border-white'} flex items-baseline justify-between">
+                                <span class="text-[11px] opacity-75">跨科概念理解率</span>
+                                <span class="text-2xl font-black font-mono ${t.c2 ? 'text-[#A855F7]' : 'text-[#FF0000] bg-white px-1'}">2.8x</span>
+                            </div>
+                        </div>
+
+                        <div class="p-5 ${cardStyle} flex flex-col justify-between">
+                            <div>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold ${badge1}">PILLAR 03</span>
+                                <h3 class="text-lg font-bold mt-2 mb-1.5 ${t.c1 ? 'text-white' : 'text-[#00FF00]'}">學習歷程自動收斂</h3>
+                                <p class="text-xs leading-relaxed ${t.c1 ? 'text-slate-300' : 'text-[#00FF00]'}">
+                                    自動整理每次探索對話紀錄，協助學生產出結構化的反思週記。
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t ${t.c3 ? 'border-slate-700' : 'border-white'} flex items-baseline justify-between">
+                                <span class="text-[11px] opacity-75">歷程整理省時</span>
+                                <span class="text-2xl font-black font-mono ${t.c2 ? 'text-[#38BDF8]' : 'text-[#00FF00]'}">-70%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative z-10 flex items-center justify-between text-xs ${t.c1 ? 'text-slate-400 border-t border-slate-800' : 'text-[#00FF00] border-t border-white'} pt-2">
+                        <span>深色模式準則：#0F172A 岩石灰藍底 + #38BDF8 / #A855F7 粉彩高亮 + 毛玻璃表面</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 專業科技發表會質感達成' : '⚠️ 避免純黑底配刺眼螢光綠與純藍紅'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // TYPO CASE 2-1: 告別 Word 作文牆 (Z 世代短影音行銷趨勢報告)
+        // -------------------------------------------------------------------------
+        function buildTypoCase1(t) {
+            const fontClass = t.c1 ? 'font-sans' : 'font-serif';
+            const titleClass = t.c3
+                ? 'text-[32px] font-black text-slate-900 tracking-tight leading-tight'
+                : 'text-base font-normal text-slate-800 leading-none';
+            const subtitleClass = t.c3
+                ? 'text-[18px] font-semibold text-indigo-600 mt-1.5'
+                : 'text-sm font-normal text-slate-700 mt-0.5';
+
+            return `
+                <div class="w-full h-full bg-slate-50 p-[7%] flex flex-col justify-between ${fontClass} slide-element">
+                    <div class="border-b border-slate-200 pb-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-600">CASE 2-1 • GEN-Z SHORT VIDEO TRENDS</span>
+                            <span class="text-xs text-slate-400 font-mono">${t.c1 ? '字體：思源黑體 Noto Sans TC' : '字體：新細明體 / 襯線體 (NG)'}</span>
+                        </div>
+                        <h1 class="${titleClass} mt-1 slide-element">
+                            短影音黃金前 3 秒：決定 85% 完播率關鍵
+                        </h1>
+                        <p class="${subtitleClass} slide-element">
+                            Z 世代社群互動行為調查與內容創作者實戰指南
+                        </p>
+                    </div>
+
+                    <div class="my-auto py-3">
+                        ${!t.c2 ? `
+                            <div class="bg-white border border-slate-300 p-4 rounded-lg text-slate-800 ${t.c3 ? 'text-sm leading-[1.6]' : 'text-[13px] leading-[1.15]'}">
+                                <p class="mb-2">
+                                    根據我們團隊在 2026 年針對全台灣 15 至 24 歲青少年與大學生所進行的「Z 世代社群媒體使用習慣與短影音行銷趨勢深度調查報告」顯示，現在的觀眾注意力已經從過去的 8 秒大幅縮短到只剩下 3 秒鐘不到。如果創作者在影片開頭的前 3 秒沒有辦法立刻提供強烈的視覺衝擊、懸疑問題或是直接點出觀眾痛點，有高達 85.4% 的使用者會毫不猶豫地直接往上滑走跳過該則影片，導致演算法判定內容缺乏吸引力。
+                                </p>
+                                <p class="mb-2">
+                                    此外，我們也發現在聲音與字幕的配置上，有將近 72% 的學生習慣在搭乘大眾運輸工具、圖書館或睡前使用「靜音模式」瀏覽 Reels 與 Shorts 短影音。這意味著如果影片沒有搭配清晰、醒目且節奏明快的動態關鍵字字幕，觀眾根本無法理解影片內容。最後，在影片長度的選擇上，數據證明 30 秒到 45 秒之間的高密度知識型或劇情反轉型短片，其收藏率與分享率是傳統 3 分鐘長片的三倍以上。
+                                </p>
+                                <div class="mt-2 text-xs text-rose-600 font-sans font-bold bg-rose-50 px-2.5 py-1 rounded inline-block">
+                                    ⚠️ 診斷：整頁塞滿 260 字作文牆！觀眾忙著讀字，根本沒辦法聽講者說話。
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-3 gap-5">
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg mb-2.5">
+                                            <i class="ph-fill ph-lightning"></i>
+                                        </div>
+                                        <div class="${t.c3 ? 'text-2xl font-black text-indigo-600' : 'text-sm font-bold text-slate-800'}">前 3 秒黃金鉤子</div>
+                                        <h3 class="${t.c3 ? 'text-sm font-bold text-slate-800 mt-1' : 'text-xs font-normal text-slate-700'}">85% 觀眾無亮點即滑走</h3>
+                                    </div>
+                                    <ul class="${t.c3 ? 'text-xs text-slate-600 mt-3 space-y-1 leading-[1.6]' : 'text-xs text-slate-600 mt-1 leading-none'}">
+                                        <li>• 開頭直接破題或拋出反差提問</li>
+                                        <li>• 捨棄冗長片頭動畫與招呼語</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg mb-2.5">
+                                            <i class="ph-fill ph-closed-captioning"></i>
+                                        </div>
+                                        <div class="${t.c3 ? 'text-2xl font-black text-indigo-600' : 'text-sm font-bold text-slate-800'}">72% 靜音模式瀏覽</div>
+                                        <h3 class="${t.c3 ? 'text-sm font-bold text-slate-800 mt-1' : 'text-xs font-normal text-slate-700'}">動態大字幕成為標配</h3>
+                                    </div>
+                                    <ul class="${t.c3 ? 'text-xs text-slate-600 mt-3 space-y-1 leading-[1.6]' : 'text-xs text-slate-600 mt-1 leading-none'}">
+                                        <li>• 通勤與睡前多關閉手機聲音</li>
+                                        <li>• 關鍵字高亮字幕提升留存率</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg mb-2.5">
+                                            <i class="ph-fill ph-timer"></i>
+                                        </div>
+                                        <div class="${t.c3 ? 'text-2xl font-black text-indigo-600' : 'text-sm font-bold text-slate-800'}">30~45 秒高密度</div>
+                                        <h3 class="${t.c3 ? 'text-sm font-bold text-slate-800 mt-1' : 'text-xs font-normal text-slate-700'}">收藏分享率飆升 3 倍</h3>
+                                    </div>
+                                    <ul class="${t.c3 ? 'text-xs text-slate-600 mt-3 space-y-1 leading-[1.6]' : 'text-xs text-slate-600 mt-1 leading-none'}">
+                                        <li>• 單一核心觀點節奏最明快</li>
+                                        <li>• 知識乾貨型短片最易觸發收藏</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2.5">
+                        <span>資料來源：2026 Z 世代數位行銷實驗室調查 (N=2,400)</span>
+                        <span>${t.c3 ? '✓ 字級階層：32px 標題 / 18px 副標 / 1.6 倍呼吸行距' : '⚠️ 字級無層次且行距過於擁擠'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // TYPO CASE 2-2: 巨型數字視覺張力 (校園手搖飲消費習慣調查)
+        // -------------------------------------------------------------------------
+        function buildTypoCase2(t) {
+            return `
+                <div class="w-full h-full bg-[#FFFBEB] text-slate-900 p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between border-b border-amber-200/80 pb-3">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-amber-700">CASE 2-2 • CAMPUS BEVERAGE SURVEY</span>
+                            <h1 class="text-2xl lg:text-3xl font-black text-slate-900 mt-1">
+                                校園手搖飲消費習慣調查：無糖茶飲與環保杯成主流
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-amber-800/60">HERO NUMBER</span>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-6 my-auto py-3 items-center">
+                        <!-- Left 5 Cols: Giant 72px 78% Callout -->
+                        <div class="col-span-5 bg-white rounded-2xl p-5 border border-amber-200 shadow-sm space-y-4">
+                            ${!t.c1 ? `
+                                <p class="text-sm text-slate-700 leading-relaxed">
+                                    根據最新校園問卷統計，有高達百分之七十八（78%）的學生每週至少會購買 3 杯以上的手搖飲品，顯示手搖飲已成為學生課後社交與紓壓不可或缺的日常消費習慣。
+                                </p>
+                            ` : `
+                                <div>
+                                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">核心發現 • 重度消費族群</span>
+                                    <div class="text-[72px] leading-none font-black text-amber-600 font-mono tracking-tight my-2">78<span class="text-3xl">%</span></div>
+                                    <div class="text-sm font-bold text-slate-800">學生每週至少購買 3 杯以上手搖飲</div>
+                                    <p class="text-xs text-slate-500 mt-1">手搖飲已成為校園日常社交與課業紓壓首選</p>
+                                </div>
+                            `}
+
+                            <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-3">
+                                ${!t.c2 ? `
+                                    <div class="text-xs text-slate-700">平均每月花費金額新台幣850元整</div>
+                                    <div class="text-xs text-slate-700">自備環保杯成長率達3.5倍之多</div>
+                                ` : `
+                                    <div>
+                                        <div class="text-[11px] text-slate-400">月均手搖飲支出</div>
+                                        <div class="flex items-baseline gap-1 mt-0.5">
+                                            <span class="text-2xl font-black font-mono text-amber-700">850</span>
+                                            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">NT$ / 月</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[11px] text-slate-400">自備環保杯成長</div>
+                                        <div class="flex items-baseline gap-1 mt-0.5">
+                                            <span class="text-2xl font-black font-mono text-emerald-600">3.5</span>
+                                            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">倍成長</span>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <!-- Right 7 Cols: Plain Semicolon Clauses vs Structured SVG Icon Stack -->
+                        <div class="col-span-7">
+                            ${!t.c3 ? `
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed">
+                                    <div class="font-bold text-slate-900 mb-2">學生三大消費偏好分析：</div>
+                                    <p>
+                                        選擇無糖或微糖比例高達 82%，過去全糖珍奶已逐漸被清爽純茶取代；自備環保杯折抵 5 元政策奏效，學生自備環保隨行杯比例較去年大幅成長 3.5 倍；咀嚼系配料依然熱門，但低熱量的寒天晶球與茶凍點購率首度超越傳統波霸珍珠。
+                                    </p>
+                                    <div class="text-xs text-rose-600 font-bold mt-3">⚠️ 以分號擠在同一段純文字裡，缺乏視覺圖示引導，觀眾難以快速掃讀！</div>
+                                </div>
+                            ` : `
+                                <div class="space-y-3">
+                                    <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-sm flex items-center gap-4">
+                                        <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <h3 class="font-bold text-sm text-slate-900">減糖風潮：無糖與微糖佔比達 82%</h3>
+                                                <span class="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Top 1 選擇</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-0.5">清爽原葉純茶與鮮果茶取代傳統全糖奶精飲品</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-sm flex items-center gap-4">
+                                        <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <h3 class="font-bold text-sm text-slate-900">永續意識：自備環保杯成長 3.5 倍</h3>
+                                                <span class="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">-NT$5 誘因</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-0.5">5 元折價政策直接帶動校園環保隨行杯普及率</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-sm flex items-center gap-4">
+                                        <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <h3 class="font-bold text-sm text-slate-900">輕盈咀嚼：低卡寒天與茶凍超越波霸</h3>
+                                                <span class="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">低熱量配料</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-0.5">兼顧咀嚼口感與熱量控制，成為新世代加料首選</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-amber-900/50 border-t border-amber-200/80 pt-2">
+                        <span>2026 校園消費行為調查報告</span>
+                        <span>技巧：72px 巨型數字錨點 + 數值單位分離 + 結構化 SVG 圖示列表</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // TYPO CASE 2-3: 專業商務表格改造 (專題協作軟體方案評比表)
+        // -------------------------------------------------------------------------
+        function buildTypoCase3(t) {
+            const cellBorder = t.c1 ? 'border-b border-slate-200 py-3 px-4' : 'border-2 border-black py-2 px-2';
+            const textAlign = t.c2 ? 'text-left' : 'text-center';
+            const numAlign = t.c2 ? 'text-right font-mono tabular-nums' : 'text-center';
+            const recColBg = t.c3 ? 'bg-indigo-50/90 text-indigo-950 font-semibold' : '';
+
+            return `
+                <div class="w-full h-full bg-white text-slate-800 p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-600">CASE 2-3 • BUSINESS TABLE REDESIGN</span>
+                            <h1 class="text-2xl lg:text-3xl font-black text-slate-900 mt-1">
+                                專題協作軟體方案評比表：校園進階版最具性價比
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">DATA TABLE</span>
+                    </div>
+
+                    <div class="my-auto py-2">
+                        <table class="w-full border-collapse text-xs ${t.c1 ? '' : 'border-4 border-black'}">
+                            <thead>
+                                <tr class="${t.c1 ? 'bg-slate-100/80 border-b-2 border-slate-300 text-slate-700' : 'bg-slate-300 border-2 border-black text-black'}">
+                                    <th class="${cellBorder} ${textAlign} w-[28%]">功能項目 / 規格比較</th>
+                                    <th class="${cellBorder} text-center w-[24%]">個人免費版</th>
+                                    <th class="${cellBorder} text-center w-[24%] ${t.c3 ? 'bg-indigo-600 text-white rounded-t-xl font-bold' : ''}">
+                                        校園進階版 ${t.c3 ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] bg-amber-400 text-slate-950 rounded-full">★ 最推薦</span>' : ''}
+                                    </th>
+                                    <th class="${cellBorder} text-center w-[24%]">企業旗艦版</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="${cellBorder} ${textAlign} font-bold">共同編輯人數上限</td>
+                                    <td class="${cellBorder} ${numAlign}">最多 3 人</td>
+                                    <td class="${cellBorder} ${numAlign} ${recColBg}">無限制 (全班協作)</td>
+                                    <td class="${cellBorder} ${numAlign}">無限制</td>
+                                </tr>
+                                <tr>
+                                    <td class="${cellBorder} ${textAlign} font-bold">雲端專案儲存空間</td>
+                                    <td class="${cellBorder} ${numAlign}">5 GB</td>
+                                    <td class="${cellBorder} ${numAlign} ${recColBg}">500 GB</td>
+                                    <td class="${cellBorder} ${numAlign}">5,000 GB</td>
+                                </tr>
+                                <tr>
+                                    <td class="${cellBorder} ${textAlign} font-bold">AI 會議摘要與進度追蹤</td>
+                                    <td class="${cellBorder} ${textAlign}">不支援此功能</td>
+                                    <td class="${cellBorder} ${textAlign} ${recColBg}">✓ 完整支援內建 AI 助手</td>
+                                    <td class="${cellBorder} ${textAlign}">✓ 完整支援內建 AI 助手</td>
+                                </tr>
+                                <tr>
+                                    <td class="${cellBorder} ${textAlign} font-bold">每帳號年費預算 (NT$)</td>
+                                    <td class="${cellBorder} ${numAlign}">NT$ 0</td>
+                                    <td class="${cellBorder} ${numAlign} ${recColBg} ${t.c3 ? 'rounded-b-xl text-indigo-700 font-black text-sm' : ''}">
+                                        NT$ 360
+                                    </td>
+                                    <td class="${cellBorder} ${numAlign}">NT$ 4,800</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2">
+                        <span>表格原則：減法格線（去垂直線）、文左數右 (tabular-nums)、推薦方案整欄高亮</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 專業商務評比表完成' : '⚠️ 傳統粗黑框置中表格難以快速決策'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // IMAGE CASE 3-1: 滿版出血與漸層遮罩 (阿里山精品咖啡品牌故事)
+        // -------------------------------------------------------------------------
+        function buildImageCase1(t) {
+            // c1: Proper aspect-ratio object-cover vs squished/stretched visual
+            // c2: Full-bleed background visual without white box padding or watermark
+            // c3: Dark gradient overlay (from-slate-950/90 via-slate-950/60 to-transparent)
+
+            return `
+                <div class="w-full h-full relative overflow-hidden ${t.c2 ? 'bg-slate-950 p-0' : 'bg-white p-6'} flex items-center slide-element">
+                    <!-- Background Image Container -->
+                    <div class="${t.c2 ? 'absolute inset-0' : 'relative w-full h-full border-8 border-slate-300'} overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1400&q=85" 
+                             alt="Alishan Coffee"
+                             onerror="this.style.display='none'"
+                             class="w-full h-full transition-all duration-500 ${
+                                 !t.c1 ? 'object-fill scale-x-150 scale-y-50' : 'object-cover scale-100'
+                             }" />
+                        <!-- Fallback rich coffee gradient if image offline -->
+                        <div class="inset-0 bg-gradient-to-tr from-stone-900 via-amber-800 to-amber-100 -z-10"></div>
+
+                        <!-- NG Watermark & White Box Notice when c2 is OFF -->
+                        ${!t.c2 ? `
+                            <div class="absolute inset-0 pointer-events-none flex flex-wrap items-center justify-around opacity-55 z-10 rotate-[-10deg]">
+                                <span class="text-2xl font-mono font-black text-white bg-black/40 border-2 border-white px-3 py-1">SAMPLE 圖庫浮水印預覽</span>
+                                <span class="text-2xl font-mono font-black text-white bg-black/40 border-2 border-white px-3 py-1">WHITE BOX PADDING 白邊未出血</span>
+                            </div>
+                        ` : ''}
+
+                        <!-- Toggle 3: Scrim Gradient Overlay -->
+                        <div class="absolute inset-0 transition-all duration-500 z-10 ${
+                            t.c3 ? 'bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent' : 'bg-transparent'
+                        }"></div>
+                    </div>
+
+                    <!-- Foreground Typography Content -->
+                    <div class="relative z-20 w-full h-full p-[7%] grid grid-cols-12 gap-6 items-center pointer-events-none">
+                        <div class="col-span-8 space-y-4">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase ${
+                                t.c3 ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' : 'bg-white/60 text-stone-900'
+                            }">
+                                CASE 3-1 • ALISHAN SPECIALTY COFFEE
+                            </div>
+
+                            <h1 class="text-3xl lg:text-4xl font-black leading-tight transition-colors ${
+                                t.c3 ? 'text-white drop-shadow-md' : 'text-white drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]'
+                            }">
+                                雲霧孕育的琥珀色甘醇：<br/>阿里山海拔 1,400 公尺手沖藝伎
+                            </h1>
+
+                            <p class="text-sm leading-relaxed max-w-xl transition-colors ${
+                                t.c3 ? 'text-slate-200' : 'text-white font-bold'
+                            }">
+                                嚴選北回歸線高山莊園紅熟咖啡櫻桃，歷經 21 天慢速日曬發酵。入口帶有台灣高山烏龍茶韻、佛手柑香氣與蜜桃甜感，榮獲 2026 亞洲精品咖啡評鑑金獎。
+                            </p>
+
+                            <div class="pt-2 flex items-center gap-6">
+                                <div class="${t.c3 ? 'text-amber-400' : 'text-white'}">
+                                    <div class="text-2xl font-black font-mono">92.5 分</div>
+                                    <div class="text-xs opacity-90">CQI 國際杯測認證</div>
+                                </div>
+                                <div class="w-px h-8 bg-white/30"></div>
+                                <div class="${t.c3 ? 'text-amber-400' : 'text-white'}">
+                                    <div class="text-2xl font-black font-mono">100%</div>
+                                    <div class="text-xs opacity-90">友善小農契作莊園</div>
+                                </div>
+                            </div>
+
+                            ${(!t.c1 || !t.c2 || !t.c3) ? `
+                                <div class="inline-block bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
+                                    ${!t.c1 ? '⚠️ 圖片被硬拉變形！ ' : ''}${!t.c2 ? '⚠️ 四周有突兀白框與浮水印！ ' : ''}${!t.c3 ? '⚠️ 未加漸層遮罩，白字在亮處看不清！' : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // IMAGE CASE 3-2: 多圖便當盒網格 (Bento Grid) (台日高校國際交流成果展)
+        // -------------------------------------------------------------------------
+        function buildImageCase2(t) {
+            const frameStyle = t.c1
+                ? 'rounded-2xl overflow-hidden border border-slate-200 shadow-sm rotate-0'
+                : 'rounded-none border-[5px] border-yellow-400 shadow-[5px_5px_0px_#dc2626]';
+
+            const gridGapClass = t.c2 ? 'gap-3.5' : '-space-x-6 -space-y-4';
+
+            return `
+                <div class="w-full h-full bg-slate-50 text-slate-900 p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-600">CASE 3-2 • BENTO GRID GALLERY</span>
+                            <h1 class="text-2xl lg:text-3xl font-black text-slate-900 mt-1">
+                                2026 台日高校國際交流成果展：永續科學實作週
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">MULTI-PHOTO BENTO</span>
+                    </div>
+
+                    <div class="my-auto py-3 h-64">
+                        <div class="grid ${t.c3 ? 'grid-cols-12' : 'grid-cols-4'} ${gridGapClass} h-full items-stretch">
+                            <!-- Photo 1: Hero Keynote Photo -->
+                            <div class="${t.c3 ? 'col-span-6' : 'col-span-1'} ${frameStyle} relative bg-indigo-950 transition-all duration-500 ${!t.c1 ? '-rotate-6 translate-x-4 translate-y-2 z-20' : ''}">
+                                <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80" 
+                                     alt="Students Group"
+                                     class="w-full h-full object-cover opacity-90" />
+                                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent p-3.5 text-white">
+                                    <span class="text-[10px] font-bold bg-indigo-600 px-2 py-0.5 rounded">${t.c3 ? '★ 主視覺大圖 (50%)' : '照片 1'}</span>
+                                    <h3 class="font-bold text-sm mt-1">台日兩校 60 位師生開幕式大合照</h3>
+                                </div>
+                            </div>
+
+                            <!-- Supporting 3 Photos -->
+                            <div class="${t.c3 ? 'col-span-6 grid grid-cols-2 grid-rows-2' : 'col-span-3 grid grid-cols-3'} ${t.c2 ? 'gap-3.5' : '-space-x-4'} h-full">
+                                <div class="${t.c3 ? 'col-span-2 row-span-1' : 'col-span-1'} ${frameStyle} relative bg-emerald-950 transition-all duration-500 ${!t.c1 ? 'rotate-6 translate-y-3 z-10' : ''}">
+                                    <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=700&q=80" 
+                                         alt="Workshop"
+                                         class="w-full h-full object-cover opacity-90" />
+                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/85 to-transparent p-2.5 text-white">
+                                        <div class="font-bold text-xs">英語專題發表與水質檢測實驗</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-1 ${frameStyle} relative bg-amber-950 transition-all duration-500 ${!t.c1 ? '-rotate-3 translate-y-4' : ''}">
+                                    <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=600&q=80" 
+                                         alt="Campus Tour"
+                                         class="w-full h-full object-cover opacity-90" />
+                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/85 to-transparent p-2.5 text-white">
+                                        <div class="font-bold text-xs">校園文化導覽</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-1 ${frameStyle} relative bg-sky-950 transition-all duration-500 ${!t.c1 ? 'rotate-6 -translate-y-2' : ''}">
+                                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80" 
+                                         alt="Team Discussion"
+                                         class="w-full h-full object-cover opacity-90" />
+                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/85 to-transparent p-2.5 text-white">
+                                        <div class="font-bold text-xs">跨國小組腦力激盪</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2">
+                        <span>Bento Grid 原則：0度水平擺正 + 14px 等距網格 + 1大3小主次視覺</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 便當盒網格完美對齊' : '⚠️ 歪斜重疊與平分秋色導致視覺混亂'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // IMAGE CASE 3-3: 團隊人物介紹一致性 (校園新創競賽團隊陣容)
+        // -------------------------------------------------------------------------
+        function buildImageCase3(t) {
+            const members = [
+                {
+                    role: 'CEO • 專案企劃與商務開發',
+                    name: '林宥辰',
+                    skills: '商業模式驗證 / 財務預測 / 簡報提案',
+                    ngBio: '林宥辰，企管系大三，平常喜歡打籃球跟看電影，在這次團隊裡面負責寫商業計畫書、算財務報表還有上台簡報。',
+                    offsetClass: !t.c2 ? '-translate-y-5' : 'translate-y-0',
+                    avatarShape: t.c1 ? 'w-24 h-24 rounded-full bg-indigo-100 border-2 border-indigo-200' : 'w-20 h-28 rounded-none bg-yellow-300 border-4 border-red-500',
+                    svgScale: t.c1 ? 'scale-100' : 'scale-[0.65] translate-y-3',
+                    shirtColor: '#312e81'
+                },
+                {
+                    role: 'CTO • 全端工程與 AI 模型',
+                    name: '陳品妤',
+                    skills: 'Python 後端架構 / React / LLM 微調',
+                    ngBio: '陳品妤（資工三），之前參加過很多次黑客松比賽，這次主要負責把網站寫出來還有串接大語言模型的 API。',
+                    offsetClass: !t.c2 ? 'translate-y-6' : 'translate-y-0',
+                    avatarShape: t.c1 ? 'w-24 h-24 rounded-full bg-emerald-100 border-2 border-emerald-200' : 'w-32 h-20 rounded-none bg-lime-400 border-4 border-blue-600',
+                    svgScale: t.c1 ? 'scale-100' : 'scale-[1.45] translate-y-2',
+                    shirtColor: '#065f46'
+                },
+                {
+                    role: 'CDO • 產品 UI/UX 與品牌視覺',
+                    name: '張凱傑',
+                    skills: 'Figma 互動原型 / 使用者訪談 / 品牌識別',
+                    ngBio: '張凱傑，工設系二年級，擅長用 Figma 畫介面跟設計海報，負責去訪問使用者痛點並把 App 畫面設計得更好看。',
+                    offsetClass: !t.c2 ? '-translate-y-3' : 'translate-y-0',
+                    avatarShape: t.c1 ? 'w-24 h-24 rounded-full bg-amber-100 border-2 border-amber-200' : 'w-24 h-24 rounded-none bg-pink-400 border-4 border-green-500',
+                    svgScale: t.c1 ? 'scale-100' : 'scale-[0.8] -translate-x-4',
+                    shirtColor: '#92400e'
+                }
+            ];
+
+            return `
+                <div class="w-full h-full bg-white text-slate-900 p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-600">CASE 3-3 • TEAM CONSISTENCY</span>
+                            <h1 class="text-2xl lg:text-3xl font-black text-slate-900 mt-1">
+                                校園新創競賽團隊陣容：跨域整合商業、AI 與設計
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">AVATAR ALIGNMENT</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 my-auto py-4 items-stretch">
+                        ${members.map(m => `
+                            <div class="rounded-2xl p-5 flex flex-col items-center text-center transition-all duration-500 ${m.offsetClass} ${
+                                t.c2 ? 'bg-slate-50 border border-slate-200/80 shadow-sm' : 'bg-slate-100 border-2 border-dashed border-slate-400'
+                            }">
+                                <div class="mb-3.5 relative flex items-end justify-center overflow-hidden transition-all duration-500 ${m.avatarShape}">
+                                    <svg viewBox="0 0 120 120" class="w-24 h-24 transition-transform duration-500 ${m.svgScale}">
+                                        <path d="M20 120 C20 88, 100 88, 100 120 Z" fill="${m.shirtColor}"/>
+                                        <rect x="50" y="70" width="20" height="20" rx="6" fill="#fbd38d"/>
+                                        <circle cx="60" cy="52" r="24" fill="#fbd38d"/>
+                                        <path d="M36 50 C36 25, 84 25, 84 50 C84 36, 72 32, 60 32 C48 32, 36 36, 36 50 Z" fill="#1e293b"/>
+                                        <circle cx="51" cy="52" r="2.8" fill="#0f172a"/>
+                                        <circle cx="69" cy="52" r="2.8" fill="#0f172a"/>
+                                        <path d="M53 61 Q60 66 67 61" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+
+                                ${!t.c3 ? `
+                                    <p class="text-xs text-slate-700 leading-snug text-left">${m.ngBio}</p>
+                                ` : `
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 mb-1.5">
+                                        ${m.role}
+                                    </span>
+                                    <h3 class="text-lg font-black text-slate-900">${m.name}</h3>
+                                    <div class="w-full mt-2.5 pt-2.5 border-t border-slate-200/80 text-xs font-medium text-slate-600">
+                                        ${m.skills}
+                                    </div>
+                                `}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2">
+                        <span>人物介紹原則：統一圓形遮罩與臉部比例 + 嚴格水平基準線對齊 + 職稱膠囊標籤化</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 團隊介紹視覺一致性達成' : '⚠️ 長寬不一且高低跳動影響專業感'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // LAYOUT CASE 4-1: CRAP 對齊與留白原則 (GoTrip 智慧旅遊 App 發表)
+        // -------------------------------------------------------------------------
+        function buildLayoutCase1(t) {
+            const paddingClass = t.c3 ? 'p-[7%]' : 'p-0.5';
+            const headerAlignClass = t.c1 ? 'text-left items-start' : 'text-center items-center';
+
+            return `
+                <div class="w-full h-full bg-slate-900 text-white ${paddingClass} flex flex-col justify-between slide-element">
+                    <div class="flex flex-col ${headerAlignClass} slide-element">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold mb-2">
+                            <i class="ph-fill ph-airplane-tilt"></i> CASE 4-1 • GOTRIP AI 2.0 產品發表會
+                        </div>
+                        <h1 class="text-3xl lg:text-4xl font-black tracking-tight text-white">
+                            三大 AI 核心引擎，重新定義自助旅行體驗
+                        </h1>
+                        <p class="text-sm text-slate-400 mt-1 ${t.c1 ? '' : 'ml-40 text-right'}">
+                            從行程規劃、即時翻譯到預算分帳，一站式搞定跨國自由行所有痛點
+                        </p>
+                    </div>
+
+                    <div class="my-auto py-2">
+                        ${!t.c2 ? `
+                            <div class="space-y-2">
+                                <div class="flex ${t.c1 ? 'justify-around' : 'justify-between px-12'} bg-slate-800/40 p-2 rounded">
+                                    <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-xl"><i class="ph-fill ph-sparkle"></i></div>
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-xl"><i class="ph-fill ph-translate"></i></div>
+                                    <div class="w-10 h-10 rounded-lg bg-amber-600 flex items-center justify-center text-xl"><i class="ph-fill ph-currency-circle-dollar"></i></div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-4 pt-5 pb-1">
+                                    <h3 class="font-bold text-base text-indigo-300 ${t.c1 ? 'text-left' : 'text-center'}">01. 30秒智慧排程</h3>
+                                    <h3 class="font-bold text-base text-emerald-300 ${t.c1 ? 'text-left' : 'text-right'}">02. AR 菜單即時翻譯</h3>
+                                    <h3 class="font-bold text-base text-amber-300 ${t.c1 ? 'text-left' : 'text-left pl-8'}">03. 多幣別旅伴分帳</h3>
+                                </div>
+
+                                <div class="text-[11px] text-rose-400 bg-rose-950/60 border border-rose-500/30 px-2.5 py-1 rounded inline-block my-1">
+                                    ⚠️ 違反親密性原則：圖示、標題與數據彼此分離，觀眾需要費力上下配對！
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-6 pt-3">
+                                    <p class="text-xs text-slate-400 ${t.c1 ? 'text-left' : 'text-right'}">輸入旅遊天數與喜好，AI 自動串接最佳順路景點與交通時間。</p>
+                                    <p class="text-xs text-slate-400 ${t.c1 ? 'text-left' : 'text-center'}">相機對準外文菜單立刻浮現中文解說與過敏原標示，支援 42 種語言。</p>
+                                    <p class="text-xs text-slate-400 ${t.c1 ? 'text-left' : 'text-left'}">自動換算當日即時匯率，一鍵算出每位旅伴應付金額，帳目清晰。</p>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="grid grid-cols-3 gap-5 items-stretch">
+                                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between transition-all ${
+                                    t.c1 ? 'text-left translate-y-0' : 'text-center -translate-y-3 rotate-[-1deg]'
+                                }">
+                                    <div>
+                                        <div class="w-11 h-11 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-2xl mb-3.5 ${t.c1 ? '' : 'mx-auto'}">
+                                            <i class="ph-fill ph-sparkle"></i>
+                                        </div>
+                                        <span class="text-[11px] font-mono text-indigo-400 font-semibold">FEATURE 01</span>
+                                        <h3 class="text-lg font-bold text-white mt-0.5 mb-2">30 秒 AI 智慧排程</h3>
+                                        <p class="text-xs text-slate-300 leading-relaxed">
+                                            輸入旅遊天數與喜好，自動串接最佳順路景點與大眾運輸時間，徹底告別熬夜查地圖。
+                                        </p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-700/60 text-xs font-semibold text-indigo-300">
+                                        平均節省 8 小時行前規劃
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between transition-all ${
+                                    t.c1 ? 'text-left translate-y-0' : 'text-right translate-y-3'
+                                }">
+                                    <div>
+                                        <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl mb-3.5 ${t.c1 ? '' : 'ml-auto'}">
+                                            <i class="ph-fill ph-translate"></i>
+                                        </div>
+                                        <span class="text-[11px] font-mono text-emerald-400 font-semibold">FEATURE 02</span>
+                                        <h3 class="text-lg font-bold text-white mt-0.5 mb-2">AR 菜單實景翻譯</h3>
+                                        <p class="text-xs text-slate-300 leading-relaxed">
+                                            手機鏡頭對準外文菜單，畫面直接浮現繁體中文餐點介紹與價格換算，支援 42 國語言。
+                                        </p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-700/60 text-xs font-semibold text-emerald-300">
+                                        辨識準確率高達 99.2%
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between transition-all ${
+                                    t.c1 ? 'text-left translate-y-0' : 'text-center -translate-y-2 rotate-[1.5deg]'
+                                }">
+                                    <div>
+                                        <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mb-3.5 ${t.c1 ? '' : 'mx-auto'}">
+                                            <i class="ph-fill ph-currency-circle-dollar"></i>
+                                        </div>
+                                        <span class="text-[11px] font-mono text-amber-400 font-semibold">FEATURE 03</span>
+                                        <h3 class="text-lg font-bold text-white mt-0.5 mb-2">多幣別旅伴智慧分帳</h3>
+                                        <p class="text-xs text-slate-300 leading-relaxed">
+                                            自動同步當日刷卡匯率，一鍵計算每位旅伴代墊與應付差額，拆帳清晰再也不怕算錯錢。
+                                        </p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-700/60 text-xs font-semibold text-amber-300">
+                                        支援日圓、歐元等 150 種貨幣
+                                    </div>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-2.5">
+                        <span>GoTrip Inc. • Product Design Keynote</span>
+                        <span class="${t.c3 ? 'text-emerald-400' : 'text-rose-400 font-bold'}">
+                            ${t.c3 ? '✓ 四周保留 8% 安全呼吸邊距' : '⚠️ 邊緣無留白：文字緊貼投影片外框！'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // LAYOUT CASE 4-2: Z 字視覺動線與行動呼籲 (校園文創市集招商企劃)
+        // -------------------------------------------------------------------------
+        function buildLayoutCase2(t) {
+            // c1: Asymmetric Z-pattern layout vs 4 identical boring quadrants
+            // c2: Clear 01 -> 02 -> 03 numbered visual flow vs unordered blocks
+            // c3: High-contrast CTA card at bottom-right terminal anchor vs buried in top-left
+
+            return `
+                <div class="w-full h-full bg-[#FAF8F5] text-stone-900 p-[7%] flex flex-col justify-between relative slide-element">
+                    <div class="flex items-center justify-between border-b border-stone-200 pb-2.5">
+                        <span class="text-xs font-bold tracking-widest text-amber-700 uppercase">CASE 4-2 • Z-PATTERN VISUAL FLOW</span>
+                        <span class="text-xs font-mono text-stone-400">閱讀動線：01 主視覺 ➔ 02 效益數據 ➔ 03 攤位規格 ➔ 右下角 CTA</span>
+                    </div>
+
+                    ${!t.c1 ? `
+                        <!-- NG: 4 Identical Boring Quadrants -->
+                        <div class="grid grid-cols-2 grid-rows-2 gap-4 my-auto py-3 h-64">
+                            <div class="bg-stone-200 p-4 rounded border border-stone-300 flex flex-col justify-between">
+                                ${!t.c3 ? `
+                                    <div class="flex items-center gap-2 bg-stone-300 p-2 rounded">
+                                        <i class="ph-bold ph-qr-code text-xl"></i>
+                                        <span class="text-xs font-bold">報名掃這裡 (被埋在左上角小字)</span>
+                                    </div>
+                                ` : ''}
+                                <span class="font-bold text-sm text-stone-800">${t.c2 ? '01. 2026 校園春日文創市集招商' : '攤位規格與設備說明'}</span>
+                                <p class="text-xs text-stone-600">提供 3x3 米標準帳篷、木作陳列桌椅與夜間照明電力。</p>
+                            </div>
+                            <div class="bg-stone-200 p-4 rounded border border-stone-300 flex flex-col justify-between">
+                                <span class="font-bold text-sm text-stone-800">${t.c2 ? '02. 預估單日人流突破 15,000 人次' : '歡迎手作品牌報名參加'}</span>
+                                <p class="text-xs text-stone-600">結合校慶草地音樂祭，串聯社群宣傳帶來跨校年輕客群。</p>
+                            </div>
+                            <div class="bg-stone-200 p-4 rounded border border-stone-300 flex flex-col justify-between">
+                                <span class="font-bold text-sm text-stone-800">${t.c2 ? '03. 招募類別：插畫、手作、輕食甜點' : '預估人流與宣傳效益'}</span>
+                                <p class="text-xs text-stone-600">嚴選 60 組學生與在地文創品牌，打造週末午後聚落。</p>
+                            </div>
+                            <div class="bg-stone-200 p-4 rounded border border-stone-300 flex flex-col justify-between">
+                                <span class="font-bold text-sm text-stone-800">活動時間與地點資訊</span>
+                                <p class="text-[11px] text-rose-600 font-bold">⚠️ 四個一模一樣的死板方塊，缺乏主次張力與視覺動線！</p>
+                            </div>
+                        </div>
+                    ` : `
+                        <!-- OK: Dynamic Asymmetric Z-Pattern Layout -->
+                        <div class="grid grid-cols-12 gap-6 my-auto py-3 items-stretch h-64">
+                            <!-- Left 6 Cols: 01 Primary Anchor & 03 Specs -->
+                            <div class="col-span-6 bg-stone-900 text-white rounded-2xl p-6 flex flex-col justify-between shadow-lg">
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500 text-stone-950">
+                                            ${t.c2 ? '01 • 視覺起點' : '招商主題'}
+                                        </span>
+                                        ${!t.c3 ? `<span class="text-[10px] bg-stone-700 px-2 py-0.5 rounded">QR Code 在左上角 (NG)</span>` : ''}
+                                    </div>
+                                    <h1 class="text-2xl lg:text-3xl font-black leading-tight text-white">
+                                        2026 校園春日文創市集<br/><span class="text-amber-400">60 組特色攤主熱烈招募</span>
+                                    </h1>
+                                </div>
+                                <div class="pt-3 border-t border-stone-700/80 text-xs text-stone-300 space-y-1">
+                                    <div class="font-bold text-amber-300">${t.c2 ? '03 • 攤位規格與檔期' : '活動檔期'}</div>
+                                    <div>11/14 (六) - 11/15 (日) • 免費提供木作攤架與電力</div>
+                                </div>
+                            </div>
+
+                            <!-- Right 6 Cols: Top 02 Traffic Highlight + Bottom-Right Terminal CTA -->
+                            <div class="col-span-6 flex flex-col justify-between gap-4">
+                                <div class="bg-white border border-stone-200 rounded-2xl p-4 flex items-center justify-between shadow-sm flex-1">
+                                    <div>
+                                        <span class="text-[11px] font-mono font-bold text-amber-700">${t.c2 ? '02 • 核心人流效益' : '人流預估'}</span>
+                                        <h3 class="font-bold text-base text-stone-800 mt-0.5">結合校慶草地音樂祭，曝光度滿載</h3>
+                                        <p class="text-xs text-stone-500">串聯 IG 校園大使宣傳，吸引跨校人潮</p>
+                                    </div>
+                                    <div class="text-right shrink-0 pl-3 border-l border-stone-100">
+                                        <div class="text-2xl font-black font-mono text-amber-600">15,000+</div>
+                                        <div class="text-[10px] text-stone-400">預估單日人次</div>
+                                    </div>
+                                </div>
+
+                                <!-- Bottom-Right Terminal Anchor CTA -->
+                                <div class="rounded-2xl p-4 flex items-center justify-between transition-all flex-1 ${
+                                    t.c3 
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-stone-950 shadow-lg shadow-amber-500/20' 
+                                        : 'bg-stone-200 text-stone-500 border border-stone-300'
+                                }">
+                                    <div>
+                                        <span class="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-stone-950/15">
+                                            ${t.c3 ? '★ 視覺終點黃金落點 (CTA)' : '未強調行動呼籲 (NG)'}
+                                        </span>
+                                        <h3 class="text-base font-black mt-1">學生攤位早鳥免租金！10/20 截止</h3>
+                                        <p class="text-xs opacity-90">立即掃描右側 QR Code 填寫進駐表單</p>
+                                    </div>
+                                    <div class="w-14 h-14 rounded-xl bg-white p-1.5 flex flex-col items-center justify-center shrink-0 shadow">
+                                        <i class="ph-bold ph-qr-code text-3xl text-stone-900"></i>
+                                        <span class="text-[8px] font-mono font-bold text-stone-800">SCAN ME</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `}
+
+                    <div class="flex items-center justify-between text-xs text-stone-400 border-t border-stone-200 pt-2">
+                        <span>視覺動線法則：不對稱主次佈局 + 01➔02➔03 編號引導 + 右下角黃金落點 CTA</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 完美引導觀眾眼球動線' : '⚠️ 四等分方塊缺乏視覺起點與終點'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------------------------
+        // LAYOUT CASE 4-3: 時間軸與流程圖減法設計 (畢業專題五階段時程規劃)
+        // -------------------------------------------------------------------------
+        function buildLayoutCase3(t) {
+            // c1: Sleek single-row horizontal connected timeline vs clunky 2-row 3D blocky arrows
+            // c2: Highlight Stage 3 "原型實作" with scale, glow, and "進行中" badge
+            // c3: Dates above node, title and 2-bullet deliverable cleanly aligned below node
+
+            const steps = [
+                { num: '01', date: '09 月', title: '題目探索', items: ['文獻探討彙整', '使用者痛點訪談'], status: 'done' },
+                { num: '02', date: '10 月', title: '架構規劃', items: ['系統流程圖設計', '資料庫綱要定義'], status: 'done' },
+                { num: '03', date: '11 月', title: '原型實作', items: ['前端互動介面開發', 'AI 模型 API 串接'], status: 'active' },
+                { num: '04', date: '12 月', title: '封測優化', items: ['30 位學生可用性測試', '效能調校與除錯'], status: 'upcoming' },
+                { num: '05', date: '01 月', title: '成果發表', items: ['專題展海報輸出', '總決賽簡報展演'], status: 'upcoming' }
+            ];
+
+            return `
+                <div class="w-full h-full bg-white text-slate-900 p-[7%] flex flex-col justify-between slide-element">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-600">CASE 4-3 • TIMELINE SIMPLIFICATION</span>
+                            <h1 class="text-2xl lg:text-3xl font-black text-slate-900 mt-1">
+                                畢業專題五階段時程規劃：目前推進至「03 原型實作」
+                            </h1>
+                        </div>
+                        <span class="text-xs font-mono text-slate-400">HORIZONTAL TIMELINE</span>
+                    </div>
+
+                    <div class="my-auto py-3">
+                        ${!t.c1 ? `
+                            <!-- NG: Clunky 2-Row 3D Blocky Arrows -->
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-3 gap-4">
+                                    ${steps.slice(0, 3).map(s => `
+                                        <div class="bg-gradient-to-b from-blue-600 to-blue-800 text-white p-3.5 border-4 border-amber-400 rounded-r-3xl shadow-[4px_4px_0px_#1e293b]">
+                                            <div class="font-bold text-sm">➔ 階段 ${s.num} (${s.date}) ${s.title}</div>
+                                            <div class="text-xs opacity-90 mt-1">${s.items.join('、')}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 px-16">
+                                    ${steps.slice(3, 5).map(s => `
+                                        <div class="bg-gradient-to-b from-blue-600 to-blue-800 text-white p-3.5 border-4 border-amber-400 rounded-l-3xl shadow-[4px_4px_0px_#1e293b]">
+                                            <div class="font-bold text-sm">⬅ 階段 ${s.num} (${s.date}) ${s.title}</div>
+                                            <div class="text-xs opacity-90 mt-1">${s.items.join('、')}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="text-xs text-rose-600 font-bold text-center">
+                                    ⚠️ 兩排笨重 3D 立體箭頭佔據畫面，折返方向混亂且看不出目前進度！
+                                </div>
+                            </div>
+                        ` : `
+                            <!-- OK: Sleek Single-Row Horizontal Connected Timeline -->
+                            <div class="relative pt-4">
+                                <div class="absolute top-[48px] left-[8%] right-[8%] h-1 bg-slate-200 z-0"></div>
+                                ${t.c2 ? `<div class="absolute top-[48px] left-[8%] w-[42%] h-1 bg-indigo-600 z-0"></div>` : ''}
+
+                                <div class="relative z-10 grid grid-cols-5 gap-3.5 items-start">
+                                    ${steps.map(s => {
+                                        const isActive = s.status === 'active' && t.c2;
+                                        const isDone = s.status === 'done' && t.c2;
+
+                                        return `
+                                            <div class="flex flex-col items-center text-center transition-all duration-300 ${isActive ? '-translate-y-2 scale-105' : ''}">
+                                                <!-- Date Above Node -->
+                                                <span class="text-xs font-mono font-bold mb-2 ${isActive ? 'text-indigo-600' : 'text-slate-400'}">
+                                                    ${t.c3 ? s.date : '時程未對齊'}
+                                                </span>
+
+                                                <!-- Timeline Node -->
+                                                <div class="w-9 h-9 rounded-full flex items-center justify-center font-mono text-xs font-bold mb-3 transition-all ${
+                                                    isActive 
+                                                        ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-lg' 
+                                                        : (isDone ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' : 'bg-white text-slate-500 border-2 border-slate-300')
+                                                }">
+                                                    ${isDone ? '<i class="ph-bold ph-check"></i>' : s.num}
+                                                </div>
+
+                                                <!-- Aligned Card Below Node -->
+                                                <div class="w-full rounded-xl p-3 border transition-all ${
+                                                    isActive 
+                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-500/25' 
+                                                        : (isDone ? 'bg-slate-50 border-slate-200 text-slate-500 opacity-80' : 'bg-white border-slate-200 text-slate-700')
+                                                }">
+                                                    ${isActive ? '<span class="inline-block text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full mb-1">★ 進行中</span>' : ''}
+                                                    <h3 class="font-bold text-sm ${isActive ? 'text-white' : 'text-slate-800'}">${s.title}</h3>
+                                                    ${t.c3 ? `
+                                                        <ul class="text-[11px] mt-1.5 space-y-0.5 text-left pl-2 ${isActive ? 'text-indigo-100' : 'text-slate-500'}">
+                                                            <li>• ${s.items[0]}</li>
+                                                            <li>• ${s.items[1]}</li>
+                                                        </ul>
+                                                    ` : `
+                                                        <p class="text-[10px] mt-1 opacity-75">(${s.date}) ${s.items.join(' / ')}</p>
+                                                    `}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-200 pt-2">
+                        <span>時間軸原則：單排水平軸線 + 標亮「當前進行階段」 + 上下親密對齊</span>
+                        <span>${t.c1 && t.c2 && t.c3 ? '✓ 極簡水平時間軸完成' : '⚠️ 雙排立體箭頭與未標亮進度影響判讀'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // 6. MODULE 5: INTERACTIVE QUIZ ENGINE (8 QUESTIONS)
+        // =========================================================================
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            const qState = state.quiz;
+
+            if (qState.currentIndex >= quizQuestions.length) {
+                const score = Math.round(qState.score);
+                let rankTitle = '🌱 簡報排版見習生';
+                let rankDesc = '你已經開始注意到簡報的地雷了！建議回到前四個實驗室體驗全部 12 個案例，強化視覺敏銳度。';
+                let badgeColor = 'from-amber-500 to-orange-600';
+
+                if (score >= 95) {
+                    rankTitle = '🏆 傳奇視覺藝術總監';
+                    rankDesc = '太神啦！你對色彩、圖表、字體、表格、圖片與視覺動線的敏銳度達到滿分水準，未來的上台報告絕對全場驚豔！';
+                    badgeColor = 'from-indigo-500 via-purple-500 to-emerald-400';
+                } else if (score >= 75) {
+                    rankTitle = '✨ 資深簡報設計師';
+                    rankDesc = '表現非常優異！你已經掌握了絕大多數的簡報排版精髓，能輕鬆避開常見的學生排版地雷。';
+                    badgeColor = 'from-emerald-500 to-teal-500';
+                }
+
+                container.innerHTML = `
+                    <div class="bg-studio-panel border border-studio-border rounded-2xl p-8 shadow-2xl text-center max-w-3xl mx-auto">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br ${badgeColor} mx-auto flex items-center justify-center shadow-lg mb-4">
+                            <i class="ph-fill ph-medal text-4xl text-white"></i>
+                        </div>
+                        <span class="text-xs font-mono uppercase tracking-widest text-indigo-400">8 CHALLENGES COMPLETED</span>
+                        <h2 class="text-3xl font-black text-white mt-1">${rankTitle}</h2>
+                        <div class="text-5xl font-black text-emerald-400 my-4 font-mono">${score} <span class="text-xl text-slate-400">/ 100 分</span></div>
+                        <p class="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed mb-8">${rankDesc}</p>
+
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-6 text-left mb-8">
+                            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-check-square-offset text-indigo-400 text-lg"></i>
+                                上台報告前 4 大自我檢查清單
+                            </h3>
+                            <div class="grid grid-cols-2 gap-4 text-xs text-slate-300">
+                                <div class="flex items-start gap-2.5 bg-slate-800/50 p-3 rounded-lg">
+                                    <i class="ph-fill ph-palette text-amber-400 text-base shrink-0 mt-0.5"></i>
+                                    <div><strong>1. 色彩與圖表：</strong>遵守 60-30-10 比例、長條圖用灰階弱化次要項、深色模式用深灰藍 (#0F172A) 取代純黑。</div>
+                                </div>
+                                <div class="flex items-start gap-2.5 bg-slate-800/50 p-3 rounded-lg">
+                                    <i class="ph-fill ph-text-aa text-indigo-400 text-base shrink-0 mt-0.5"></i>
+                                    <div><strong>2. 文字與表格：</strong>全面用無襯線黑體、關鍵數據放大為巨型錨點、表格去除垂直線並遵守「文左數右」對齊。</div>
+                                </div>
+                                <div class="flex items-start gap-2.5 bg-slate-800/50 p-3 rounded-lg">
+                                    <i class="ph-fill ph-image text-emerald-400 text-base shrink-0 mt-0.5"></i>
+                                    <div><strong>3. 圖片與人像：</strong>嚴禁拉扯變形、滿版圖加漸層遮罩、多圖用 Bento 網格、人物頭像統一圓形遮罩並水平對齊。</div>
+                                </div>
+                                <div class="flex items-start gap-2.5 bg-slate-800/50 p-3 rounded-lg">
+                                    <i class="ph-fill ph-layout text-cyan-400 text-base shrink-0 mt-0.5"></i>
+                                    <div><strong>4. 留白與動線：</strong>四周預留 8% 安全邊距、順應 Z 字動線將 CTA 放右下角、時間軸用單排水平線並標亮當前階段。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-4">
+                            <button onclick="resetQuiz()" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+                                <i class="ph-bold ph-arrow-counter-clockwise"></i> 重新挑戰 8 題測驗
+                            </button>
+                            <button onclick="switchModule('color')" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2">
+                                <i class="ph-bold ph-sliders"></i> 返回 12 大互動實驗室
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const q = quizQuestions[qState.currentIndex];
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                實戰診斷挑戰 • ${q.category}
+                            </span>
+                            <span class="text-xs font-mono text-slate-400">QUESTION ${qState.currentIndex + 1} OF ${quizQuestions.length}</span>
+                        </div>
+                        <h2 class="text-xl lg:text-2xl font-bold text-white mt-2">${q.question}</h2>
+                    </div>
+                    <div class="bg-studio-panel px-4 py-2 rounded-xl border border-studio-border text-right shrink-0">
+                        <div class="text-[11px] text-slate-400">目前得分</div>
+                        <div class="text-xl font-mono font-black text-emerald-400">${Math.round(qState.score)} 分</div>
+                    </div>
+                </div>
+
+                <div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 bg-slate-900/90 p-5 shadow-xl">
+                    ${buildQuizVisualBanner(q.slidePreviewType)}
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 mb-6">
+                    ${q.options.map((opt, idx) => {
+                        let btnStyle = 'bg-studio-panel hover:bg-slate-800 border-studio-border text-slate-200';
+                        let iconHtml = `<span class="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-mono text-xs font-bold text-slate-400">${['A','B','C','D'][idx]}</span>`;
+
+                        if (qState.answered) {
+                            if (opt.correct) {
+                                btnStyle = 'bg-emerald-950/60 border-emerald-500 text-emerald-100';
+                                iconHtml = `<span class="w-7 h-7 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center font-bold"><i class="ph-bold ph-check"></i></span>`;
+                            } else if (qState.selectedOption === idx) {
+                                btnStyle = 'bg-rose-950/60 border-rose-500 text-rose-200';
+                                iconHtml = `<span class="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold"><i class="ph-bold ph-x"></i></span>`;
+                            } else {
+                                btnStyle = 'bg-studio-panel/40 border-slate-800 text-slate-500 opacity-60';
+                            }
+                        }
+
+                        return `
+                            <button onclick="submitQuizAnswer(${idx})" ${qState.answered ? 'disabled' : ''} 
+                                    class="w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3.5 ${btnStyle}">
+                                ${iconHtml}
+                                <span class="text-sm font-medium flex-1">${opt.text}</span>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+
+                ${qState.answered ? `
+                    <div class="p-5 rounded-xl border ${
+                        q.options[qState.selectedOption].correct 
+                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' 
+                            : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                    } flex items-center justify-between gap-4">
+                        <div class="flex items-start gap-3">
+                            <i class="ph-fill ${q.options[qState.selectedOption].correct ? 'ph-check-circle text-emerald-400' : 'ph-warning-circle text-rose-400'} text-2xl shrink-0 mt-0.5"></i>
+                            <div class="text-sm leading-relaxed">
+                                <strong class="block text-white mb-0.5">${q.options[qState.selectedOption].correct ? '診斷正確！+12.5 分' : '再想一下！正確觀念解析：'}</strong>
+                                ${q.options[qState.selectedOption].feedback}
+                            </div>
+                        </div>
+                        <button onclick="nextQuizQuestion()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition flex items-center gap-1.5 shadow-lg">
+                            <span>${qState.currentIndex === quizQuestions.length - 1 ? '查看最終診斷成績' : '下一題'}</span>
+                            <i class="ph-bold ph-arrow-right"></i>
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function buildQuizVisualBanner(type) {
+            if (type === 'color-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-gradient-to-r from-lime-400 to-yellow-300 text-red-600 border-2 border-fuchsia-600">
+                            <div class="text-xs font-bold mb-1">❌ 選項 A：色彩過度氾濫</div>
+                            <div class="text-base font-black bg-purple-600 text-yellow-200 px-2 py-0.5 inline-block rounded">每個字都不同顏色，沒有重點</div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-100 text-slate-800 border border-slate-300 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-slate-600 mb-1">✓ 選項 B：60-30-10 法則</div>
+                                <div class="text-sm font-bold">循環杯減塑成效 KPI</div>
+                            </div>
+                            <span class="text-2xl font-black bg-emerald-500 text-slate-950 px-3 py-1 rounded-lg">+68%</span>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'chart-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-slate-800 border border-rose-500/40 flex items-end justify-around h-28">
+                            <div class="w-8 h-20 bg-red-500"></div>
+                            <div class="w-8 h-14 bg-lime-400"></div>
+                            <div class="w-8 h-12 bg-purple-500"></div>
+                            <div class="w-8 h-8 bg-pink-500"></div>
+                            <span class="text-xs text-rose-300 font-bold">❌ 彩虹長條圖無焦點</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-800 border border-emerald-500/40 flex items-end justify-around h-28">
+                            <div class="w-8 h-20 bg-indigo-500 rounded-t ring-2 ring-indigo-300"></div>
+                            <div class="w-8 h-14 bg-slate-600 rounded-t"></div>
+                            <div class="w-8 h-12 bg-slate-600 rounded-t"></div>
+                            <div class="w-8 h-8 bg-slate-600 rounded-t"></div>
+                            <span class="text-xs text-emerald-300 font-bold">✓ 灰階 + 單一高亮色</span>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'typo-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-white text-slate-900 font-serif">
+                            <div class="text-xs text-rose-600 font-sans font-bold mb-1">字體 A：襯線體（新細明體）</div>
+                            <div class="text-lg">橫筆極細、末端有三角形裝飾襯線，投影幕遠看容易斷裂模糊。</div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white text-slate-900 font-sans">
+                            <div class="text-xs text-emerald-600 font-bold mb-1">字體 B：無襯線體（現代黑體）</div>
+                            <div class="text-lg font-bold">筆畫粗細均勻一致、結構俐落，遠距離觀看依然清晰好讀。</div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'table-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div class="p-3 rounded-xl bg-white text-black border-4 border-black text-center">
+                            <div class="font-bold text-rose-600 mb-1">❌ 粗黑田字格 + 全部置中</div>
+                            <div class="border-2 border-black p-1">項目文字置中 | NT$ 360</div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-white text-slate-800 border border-slate-300">
+                            <div class="font-bold text-emerald-600 mb-1">✓ 水平細線 + 文左數右 + 推薦高亮</div>
+                            <div class="border-b border-slate-200 py-1 flex justify-between px-2 bg-indigo-50 font-bold text-indigo-900">
+                                <span>校園進階版 ★ 最推薦</span><span class="font-mono">NT$ 360</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'image-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="h-28 rounded-xl bg-gradient-to-r from-amber-200 via-stone-500 to-amber-100 p-4 flex flex-col justify-center">
+                            <span class="text-xs font-bold text-rose-700">❌ 直接壓字：白字被亮背景吃掉</span>
+                            <div class="text-xl font-black text-white">阿里山精品手沖咖啡</div>
+                        </div>
+                        <div class="h-28 rounded-xl bg-gradient-to-r from-slate-950/95 via-slate-900/80 to-amber-200 p-4 flex flex-col justify-center">
+                            <span class="text-xs font-bold text-amber-400">✓ 疊加漸層遮罩 (Scrim Overlay)</span>
+                            <div class="text-xl font-black text-white">阿里山精品手沖咖啡</div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'bento-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div class="h-28 rounded-xl bg-slate-800 p-3 flex items-center justify-center gap-2">
+                            <div class="w-16 h-16 bg-amber-500/40 border-2 border-yellow-300 -rotate-12 flex items-center justify-center">歪斜1</div>
+                            <div class="w-16 h-16 bg-pink-500/40 border-2 border-white rotate-12 -ml-4 flex items-center justify-center">重疊2</div>
+                            <span class="text-rose-300 font-bold ml-2">❌ 歪斜重疊拼貼</span>
+                        </div>
+                        <div class="h-28 rounded-xl bg-slate-800 p-3 grid grid-cols-3 gap-2">
+                            <div class="col-span-2 bg-indigo-500/30 border border-indigo-400/50 rounded-lg flex items-center justify-center font-bold text-indigo-200">✓ 主視覺大圖 (50%)</div>
+                            <div class="col-span-1 flex flex-col gap-2">
+                                <div class="flex-1 bg-slate-700 rounded-lg flex items-center justify-center">輔圖1</div>
+                                <div class="flex-1 bg-slate-700 rounded-lg flex items-center justify-center">輔圖2</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'layout-quiz') {
+                return `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="h-28 rounded-xl bg-slate-800 p-0 border-2 border-rose-500/50 flex flex-col justify-between">
+                            <div class="text-sm font-bold text-white bg-slate-700">❌ 貼齊最外框：毫無留白喘息空間，投影易被切邊</div>
+                            <div class="text-xs text-slate-300">底部文字也死死貼在最底端邊線上</div>
+                        </div>
+                        <div class="h-28 rounded-xl bg-slate-800 p-5 border-2 border-dashed border-cyan-400/60 flex flex-col justify-center">
+                            <div class="text-sm font-bold text-cyan-300">✓ 預留 8% 安全邊距 (Safe Margin)</div>
+                            <div class="text-xs text-slate-300 mt-1">四周擁有舒適呼吸空間，視覺自然聚焦中央</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div class="p-3.5 rounded-xl bg-slate-800 border border-rose-500/40">
+                            <div class="font-bold text-rose-300 mb-2">❌ NG：兩排笨重 3D 箭頭折返排列</div>
+                            <div class="bg-blue-700 text-white p-2 rounded-r-full mb-1 text-center">➔ 階段 01 ➔ 階段 02 (方向混亂)</div>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-slate-800 border border-emerald-500/40">
+                            <div class="font-bold text-emerald-300 mb-2">✓ OK：單排水平軸線 + 當前階段高亮</div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="bg-slate-900 p-2 rounded text-center opacity-60">✓ 02 架構規劃</div>
+                                <div class="bg-indigo-600 text-white font-bold p-2 rounded text-center">★ 03 原型實作</div>
+                                <div class="bg-slate-900 p-2 rounded text-center opacity-60">04 封測優化</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function submitQuizAnswer(optionIdx) {
+            if (state.quiz.answered) return;
+            state.quiz.answered = true;
+            state.quiz.selectedOption = optionIdx;
+            const currentQ = quizQuestions[state.quiz.currentIndex];
+            if (currentQ.options[optionIdx].correct) {
+                state.quiz.score += 12.5;
+            }
+            renderQuiz();
+        }
+
+        function nextQuizQuestion() {
+            state.quiz.currentIndex++;
+            state.quiz.answered = false;
+            state.quiz.selectedOption = null;
+            renderQuiz();
+        }
+
+        function resetQuiz() {
+            state.quiz.currentIndex = 0;
+            state.quiz.score = 0;
+            state.quiz.answered = false;
+            state.quiz.selectedOption = null;
+            renderQuiz();
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
